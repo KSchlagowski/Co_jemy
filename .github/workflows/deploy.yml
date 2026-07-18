@@ -1,0 +1,35 @@
+name: Deploy
+
+on:
+  push:
+    branches: [master]
+
+# Avoid overlapping production deploys; cancel an in-flight deploy if a newer commit lands.
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx astro sync
+      # Self-validating gate: lint + build must pass before the deploy step runs,
+      # so a broken build never ships (GitHub `needs:` can't span workflow files).
+      - run: npm run lint
+      - run: npm run build
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+      # Runtime secrets are already set on the Worker via `wrangler secret put`,
+      # so the deploy only needs the scoped API token — not SUPABASE_*.
+      - uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          command: deploy
