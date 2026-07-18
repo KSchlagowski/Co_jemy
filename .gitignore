@@ -26,3 +26,7 @@ pnpm-debug.log*
 
 # jetbrains setting folder
 .idea/
+
+# spike scratch: vendor reference dumps (re-downloadable)
+spoon.json
+docs.html
