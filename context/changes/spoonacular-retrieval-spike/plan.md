@@ -290,11 +290,11 @@ No data or schema. The only stateful artifacts are Worker secrets: `SPOONACULAR_
 
 #### Automated
 
-- [x] 3.1 Linting passes: `npm run lint`
-- [x] 3.2 Production build passes: `npm run build`
-- [x] 3.3 Spike endpoint gone: `src/pages/api/spike/` does not exist
+- [x] 3.1 Linting passes: `npm run lint` — 5cee1de
+- [x] 3.2 Production build passes: `npm run build` — 5cee1de
+- [x] 3.3 Spike endpoint gone: `src/pages/api/spike/` does not exist — 5cee1de
 
 #### Manual
 
-- [x] 3.4 findings.md reviewed: all numbers present, quota verdict is a decision
-- [x] 3.5 contract-surfaces.md reviewed against PRD FR-010/FR-011
+- [x] 3.4 findings.md reviewed: all numbers present, quota verdict is a decision — 5cee1de
+- [x] 3.5 contract-surfaces.md reviewed against PRD FR-010/FR-011 — 5cee1de

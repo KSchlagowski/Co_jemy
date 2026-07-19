@@ -1,7 +1,7 @@
 ---
 change_id: spoonacular-retrieval-spike
 title: Verify Spoonacular retrieval, quota, and terms in the deployed Worker
-status: implementing
+status: implemented
 created: 2026-07-16
 updated: 2026-07-19
 archived_at: null
