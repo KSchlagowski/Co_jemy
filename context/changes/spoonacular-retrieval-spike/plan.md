@@ -265,26 +265,26 @@ No data or schema. The only stateful artifacts are Worker secrets: `SPOONACULAR_
 
 #### Automated
 
-- [x] 1.1 Types in sync: `npm run astro sync` completes cleanly
-- [x] 1.2 Linting passes: `npm run lint`
-- [x] 1.3 Production build passes: `npm run build`
+- [x] 1.1 Types in sync: `npm run astro sync` completes cleanly — deea7fd
+- [x] 1.2 Linting passes: `npm run lint` — deea7fd
+- [x] 1.3 Production build passes: `npm run build` — deea7fd
 
 #### Manual
 
-- [x] 1.4 Local curl with real key returns recipes + quota block (≤2 points spent)
-- [x] 1.5 Request without `x-spike-token` returns 401
+- [x] 1.4 Local curl with real key returns recipes + quota block (≤2 points spent) — deea7fd
+- [x] 1.5 Request without `x-spike-token` returns 401 — deea7fd
 
 ### Phase 2: Deploy and measure
 
 #### Automated
 
-- [ ] 2.1 CI deploy workflow run is green
+- [x] 2.1 CI deploy workflow run is green
 
 #### Manual
 
-- [ ] 2.2 Deployed smoke call (M1) returns recipes and quota headers from production URL
-- [ ] 2.3 All five M-steps executed with quota deltas recorded, total spend ≤25 points
-- [ ] 2.4 Liveness summary table produced from ~50-URL sample
+- [x] 2.2 Deployed smoke call (M1) returns recipes and quota headers from production URL
+- [x] 2.3 All five M-steps executed with quota deltas recorded, total spend ≤25 points
+- [x] 2.4 Liveness summary table produced from ~50-URL sample
 
 ### Phase 3: Record findings, seed constraints, clean up
 
