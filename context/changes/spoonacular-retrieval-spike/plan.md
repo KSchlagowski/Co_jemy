@@ -278,23 +278,23 @@ No data or schema. The only stateful artifacts are Worker secrets: `SPOONACULAR_
 
 #### Automated
 
-- [x] 2.1 CI deploy workflow run is green
+- [x] 2.1 CI deploy workflow run is green — d082078
 
 #### Manual
 
-- [x] 2.2 Deployed smoke call (M1) returns recipes and quota headers from production URL
-- [x] 2.3 All five M-steps executed with quota deltas recorded, total spend ≤25 points
-- [x] 2.4 Liveness summary table produced from ~50-URL sample
+- [x] 2.2 Deployed smoke call (M1) returns recipes and quota headers from production URL — d082078
+- [x] 2.3 All five M-steps executed with quota deltas recorded, total spend ≤25 points — d082078
+- [x] 2.4 Liveness summary table produced from ~50-URL sample — d082078
 
 ### Phase 3: Record findings, seed constraints, clean up
 
 #### Automated
 
-- [ ] 3.1 Linting passes: `npm run lint`
-- [ ] 3.2 Production build passes: `npm run build`
-- [ ] 3.3 Spike endpoint gone: `src/pages/api/spike/` does not exist
+- [x] 3.1 Linting passes: `npm run lint`
+- [x] 3.2 Production build passes: `npm run build`
+- [x] 3.3 Spike endpoint gone: `src/pages/api/spike/` does not exist
 
 #### Manual
 
-- [ ] 3.4 findings.md reviewed: all numbers present, quota verdict is a decision
-- [ ] 3.5 contract-surfaces.md reviewed against PRD FR-010/FR-011
+- [x] 3.4 findings.md reviewed: all numbers present, quota verdict is a decision
+- [x] 3.5 contract-surfaces.md reviewed against PRD FR-010/FR-011

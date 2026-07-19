@@ -13,7 +13,7 @@ export interface RecipeCandidate {
   spoonacularSourceUrl: string | null;
 }
 
-/** Parsed from the X-API-Quota-* response headers — the spike's measurement instrument. */
+/** Parsed from the X-API-Quota-* response headers — use for runtime budget tracking. */
 export interface QuotaInfo {
   used: number;
   request: number;
