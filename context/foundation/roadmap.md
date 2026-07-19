@@ -3,7 +3,7 @@ project: "Co jemy?"
 version: 1
 status: draft
 created: 2026-07-14
-updated: 2026-07-18
+updated: 2026-07-19
 prd_version: 1
 main_goal: learn
 top_blocker: skills
@@ -31,7 +31,7 @@ Meal-decision fatigue wastes time and food: the user is willing to cook but ment
 
 | ID   | Change ID                   | Outcome (user can …)                                              | Prerequisites | PRD refs                              | Status   |
 | ---- | --------------------------- | ----------------------------------------------------------------- | ------------- | ------------------------------------- | -------- |
-| F-01 | spoonacular-retrieval-spike | (foundation) Spoonacular retrieval, quota, and terms verified in deployed Worker | —             | FR-003, FR-010, FR-011                 | ready    |
+| F-01 | spoonacular-retrieval-spike | (foundation) Spoonacular retrieval, quota, and terms verified in deployed Worker | —             | FR-003, FR-010, FR-011                 | done     |
 | S-01 | production-auth-loop        | register, confirm email, and sign in on the production URL        | —             | FR-001, FR-002                         | ready    |
 | S-02 | cold-start-proposals        | request proposals and get 4 diverse real recipes with links       | F-01          | US-02, FR-003, FR-008, FR-010, FR-011, NFR (dead-link, mobile) | proposed |
 | S-03 | rate-recipe                 | rate a proposed recipe 👍/👎; rating persists across sessions      | S-02          | FR-004                                 | proposed |
@@ -76,7 +76,7 @@ Foundations below assume these are present and do NOT re-scaffold them.
   - Does an English-language, largely US-centric corpus serve a Polish-speaking user well enough day to day? US-02's "at least 2 cuisines" criterion will pass regardless, so it cannot detect this failure. — Owner: user. Block: no.
   - How often is `sourceUrl` dead, and does `spoonacularSourceUrl` work as a fallback? — Owner: team. Block: no.
 - **Risk:** the retrieval-feasibility risk this item originally carried is gone — Spoonacular is a plain REST call with no `nodejs_compat` surface. What replaced it is heavier on the schema: the provider permits storing only recipe id, title, and image URL, and — because base cost is charged per call while cuisine diversity forces one call per pinned cuisine — the free quota caps the whole app at roughly 10–21 proposal sets per day. Both constrain what S-02 can build, so both must be measured before it starts.
-- **Status:** ready
+- **Status:** done
 
 > Retargeted 2026-07-18 (renamed from `ai-search-retrieval-spike`). See `context/changes/spoonacular-retrieval-spike/change.md` for the full rationale and the research already banked against these unknowns.
 
@@ -174,3 +174,5 @@ Foundations below assume these are present and do NOT re-scaffold them.
 ## Done
 
 (Empty on first generation. `/10x-archive` appends an entry here — and flips that item's `Status` to `done` — when a change whose `Change ID` matches the item is archived.)
+
+- **F-01: (foundation) a fetch-based Spoonacular `complexSearch` call is verified working in the deployed Worker and returns recipe candidates (title, description, `sourceUrl`, image); the point cost of one full proposal set is measured against the free plan's daily quota; and the provider's attribution and storage obligations are written down as concrete schema and UI constraints.** — Archived 2026-07-19 → `context/archive/2026-07-16-spoonacular-retrieval-spike/`. Lesson: —.
