@@ -248,8 +248,8 @@ No data migration. Existing unconfirmed test accounts (if any) predate the templ
 
 #### Automated
 
-- [ ] 3.1 Deploy workflow run green: `gh run list --workflow=deploy.yml --limit 1`
-- [ ] 3.2 Production responds 200 on `/`
+- [x] 3.1 Deploy workflow run green: `gh run list --workflow=deploy.yml --limit 1` (run 29763424046 on 793307e — lint + build + wrangler deploy all green)
+- [x] 3.2 Production responds 200 on `/`
 
 #### Manual
 
