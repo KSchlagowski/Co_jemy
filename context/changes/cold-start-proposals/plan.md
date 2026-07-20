@@ -440,16 +440,16 @@ This is the repo's first migration, so `supabase/migrations/` is created here. B
 
 #### Automated
 
-- [x] 1.1 Migration file exists under `supabase/migrations/`
-- [x] 1.2 Linting passes
+- [x] 1.1 Migration file exists under `supabase/migrations/` — 1a6390e
+- [x] 1.2 Linting passes — 1a6390e
 
 #### Manual
 
-- [x] 1.3 Dry run reports the expected changes (human-run)
-- [x] 1.4 Migration applies to the linked project (human-run)
-- [x] 1.5 Both tables visible in the Supabase dashboard with RLS enabled
-- [x] 1.6 Cross-user `proposals` insert is rejected by the policy
-- [x] 1.7 Selecting `proposals` as one user returns no other user's rows
+- [x] 1.3 Dry run reports the expected changes (human-run) — 1a6390e
+- [x] 1.4 Migration applies to the linked project (human-run) — 1a6390e
+- [x] 1.5 Both tables visible in the Supabase dashboard with RLS enabled — 1a6390e
+- [x] 1.6 Cross-user `proposals` insert is rejected by the policy — 1a6390e
+- [x] 1.7 Selecting `proposals` as one user returns no other user's rows — 1a6390e
 
 ### Phase 2: Retrieval Layer
 
