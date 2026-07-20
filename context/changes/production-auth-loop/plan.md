@@ -227,14 +227,14 @@ No data migration. Existing unconfirmed test accounts (if any) predate the templ
 
 #### Automated
 
-- [x] 1.1 Lint passes: `npm run lint`
-- [x] 1.2 Build passes: `npm run astro sync && npm run build`
+- [x] 1.1 Lint passes: `npm run lint` — 7e459bc
+- [x] 1.2 Build passes: `npm run astro sync && npm run build` — 7e459bc
 
 #### Manual
 
-- [x] 1.3 Local sign-in with an existing confirmed account lands on `/dashboard` (auto-confirm clause dropped: `.dev.vars` points dev at the hosted project, so `supabase/config.toml`'s `enable_confirmations = false` does not apply; real confirmation is covered by Phase 3)
-- [x] 1.4 Bogus `token_hash` on `/api/auth/confirm` redirects with readable error, never 500
-- [x] 1.5 Missing params on `/api/auth/confirm` redirect with readable error
+- [x] 1.3 Local sign-in with an existing confirmed account lands on `/dashboard` (auto-confirm clause dropped: `.dev.vars` points dev at the hosted project, so `supabase/config.toml`'s `enable_confirmations = false` does not apply; real confirmation is covered by Phase 3) — 7e459bc
+- [x] 1.4 Bogus `token_hash` on `/api/auth/confirm` redirects with readable error, never 500 — 7e459bc
+- [x] 1.5 Missing params on `/api/auth/confirm` redirect with readable error — 7e459bc
 
 ### Phase 2: Supabase production wiring
 
