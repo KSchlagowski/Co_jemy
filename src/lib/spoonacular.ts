@@ -48,10 +48,21 @@ function parseQuota(headers: Headers): QuotaInfo | undefined {
   return { used, request, left };
 }
 
-function toCandidate(raw: Record<string, unknown>): RecipeCandidate {
+// Returns null rather than asserting: a provider schema drift or a partial result
+// would otherwise flow a malformed object into proposal logic and the database.
+// Drops are silent — a wholesale contract change shrinks sets instead of alarming.
+function toCandidate(raw: Record<string, unknown>): RecipeCandidate | null {
+  const { id, title } = raw;
+  if (typeof id !== "number" || !Number.isFinite(id)) {
+    return null;
+  }
+  if (typeof title !== "string" || title.trim() === "") {
+    return null;
+  }
+
   return {
-    id: raw.id as number,
-    title: raw.title as string,
+    id,
+    title,
     image: (raw.image as string | undefined) ?? null,
     summary: (raw.summary as string | undefined) ?? null,
     sourceName: (raw.sourceName as string | undefined) ?? null,
@@ -117,11 +128,14 @@ export function searchRecipes(params: SearchParams): Promise<SpoonacularResult> 
 
   return callApi("/recipes/complexSearch", query, (body) => {
     const results = (body as { results?: Record<string, unknown>[] }).results ?? [];
-    return results.map(toCandidate);
+    return results.map(toCandidate).filter((c): c is RecipeCandidate => c !== null);
   });
 }
 
 /** GET /recipes/{id}/information — the steady-state slots-1/2 re-fetch path. */
 export function getRecipeById(id: number): Promise<SpoonacularResult> {
-  return callApi(`/recipes/${id}/information`, {}, (body) => [toCandidate(body as Record<string, unknown>)]);
+  return callApi(`/recipes/${id}/information`, {}, (body) => {
+    const candidate = toCandidate(body as Record<string, unknown>);
+    return candidate ? [candidate] : [];
+  });
 }

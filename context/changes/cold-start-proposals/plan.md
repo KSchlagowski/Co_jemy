@@ -161,7 +161,7 @@ Note the tradeoff being accepted: drops are silent. A wholesale provider contrac
 
 **Contract**: A frozen `CUISINES` constant of the six values the spike verified return full results: `italian`, `mexican`, `chinese`, `greek`, `thai`, `french`. A `pickCuisinePair()` returning two *distinct* entries at random. Randomness has two axes — the pair and a per-call `offset` — so repeat sets vary even when a pair recurs.
 
-The offset is drawn from **0–50**, not the provider's 0–900 clamp. That 900 is `searchRecipes`' upper bound, not evidence of corpus depth: the spike verified only that these six cuisines return full results at `number=10` with the default offset; per-cuisine `totalResults` was never measured. An offset past a cuisine's corpus returns zero results while still costing its 1-point base — a randomly recurring half-empty set. Keep the bound conservative until a dev call per cuisine establishes the real `totalResults`, and let `sort=random` carry most of the variety.
+The offset is drawn from **0–20**, not the provider's 0–900 clamp. That 900 is `searchRecipes`' upper bound, not evidence of corpus depth. **Measured 2026-07-20** (the dev call this plan called for): at offset 50, `chinese`, `greek`, and `thai` return zero results, while `italian`, `mexican`, and `french` return normally; all six return results at offset 20. An offset past a cuisine's corpus returns zero results while still costing its 1-point base — observed live as two consecutive single-cuisine sets. 20 is therefore the bound, and `sort=random` carries most of the variety.
 
 #### 3. Summary sanitization
 
@@ -170,6 +170,12 @@ The offset is drawn from **0–50**, not the provider's 0–900 clamp. That 900 
 **Intent**: Turn the provider's HTML `summary` into a short plain-text excerpt that satisfies both the no-raw-HTML lint rule and the no-macros non-goal.
 
 **Contract**: A function taking `string | null` and returning a short plain-text excerpt (roughly 160 chars, cut at a sentence or word boundary — never mid-word) or null. It strips all markup including the provider's `<a>` backlinks, decodes common HTML entities, collapses whitespace, and truncates *before* any calorie/macro figure rather than carrying one into the excerpt.
+
+Three refinements the live payloads forced (2026-07-20):
+
+- The cut set is wider than bare macro figures. Anchor *text* survives tag stripping, so provider mentions cut too; and Spoonacular phrases nutrition claims without a figure — `covers 12% of your daily requirements`, `Watching your figure?` — which lead into macro talk regardless.
+- Sentence-boundary detection must require a following space or end-of-string. A bare `lastIndexOf(".")` reads the decimal in `$4.62 per serving` as a sentence end and truncates the excerpt to `For $4.`.
+- When no sentence boundary precedes the cut, trailing function words are trimmed and a remainder under 40 chars returns **null**. A stub like `This recipe serves 4 and has…` reads as a bug, not an excerpt.
 
 This is the one place a snippet is warranted, because the macro-trimming requirement is easy to read past — the sanitizer must recognize nutrition phrasing, not just tags:
 
@@ -190,7 +196,8 @@ const NUTRITION_FIGURE = /\b\d+\s*(k?cal|calories|g\s+of\s+(protein|fat|carbo?hy
 Behavior:
 - Issue exactly **two** `searchRecipes` calls, one per picked cuisine, each with `number: 20`, `sort: "random"`, and an independent random `offset` in 0–50. Two calls is the floor and the ceiling — never one call per slot.
 - Run the calls concurrently (`Promise.all`); they are independent and latency is user-facing.
-- If **both** calls fail, propagate the first failure reason. If **one** fails, continue with the survivor — 4 cards from a single cuisine beats an error screen, even though it misses the 2-cuisine target. Set `degraded: true` on the success result so the endpoint and UI can note it; it is `false` whenever both calls returned.
+- If **both** calls fail, propagate the first failure reason. If **one** fails, continue with the survivor — 4 cards from a single cuisine beats an error screen, even though it misses the 2-cuisine target. Set `degraded: true` on the success result so the endpoint and UI can note it.
+- `degraded` reports **cuisine coverage of the assembled set** (`< 2` distinct cuisines), not call failure. A call can return HTTP 200 with an empty array — a thin cuisine, or an offset past its corpus — which produces a single-cuisine set from two healthy calls. Keying the flag to call failure read `false` on exactly that case, which is the US-02 violation the flag exists to surface.
 - Dedupe the merged results by recipe id; the same recipe can legitimately return under two cuisines.
 - Interleave by cuisine (A, B, A, B) and take **up to** 4, so diversity is visible in the rendered order rather than buried. Return whatever survives — 0 to 4 — rather than padding or failing: the PRD specifies "up to 4", and a thin, heavily overlapping, or validation-drained result is a legitimate small set, not an error. When the cuisines are unbalanced, interleave best-effort and let the longer side finish the tail.
 - Attach the requested cuisine and the sanitized excerpt to each survivor.
@@ -455,14 +462,14 @@ This is the repo's first migration, so `supabase/migrations/` is created here. B
 
 #### Automated
 
-- [ ] 2.1 Type checking passes
-- [ ] 2.2 Linting passes, including the react-compiler rule
+- [x] 2.1 Type checking passes
+- [x] 2.2 Linting passes, including the react-compiler rule
 
 #### Manual
 
-- [ ] 2.3 Sanitizer output contains no markup, backlinks, or macro figures
-- [ ] 2.4 Assembled set returns 4 distinct recipes spanning both requested cuisines
-- [ ] 2.5 Repeated calls return visibly different recipes
+- [x] 2.3 Sanitizer output contains no markup, backlinks, or macro figures
+- [x] 2.4 Assembled set returns 4 distinct recipes spanning both requested cuisines
+- [x] 2.5 Repeated calls return visibly different recipes
 
 ### Phase 3: Proposals Endpoint
 
