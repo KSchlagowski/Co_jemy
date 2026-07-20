@@ -1,0 +1,61 @@
+---
+import Layout from "@/layouts/Layout.astro";
+
+// No frontmatter logic on purpose: the session must be established through
+// /api/auth/callback, because the implicit-flow tokens arrive in a URL fragment
+// that never reaches the server. The script below forwards whichever credential
+// this page was handed — PKCE `?code=` or fragment tokens.
+---
+
+<Layout title="Signing you in">
+  <div class="bg-cosmic flex min-h-screen items-center justify-center p-4">
+    <div
+      class="w-full max-w-sm rounded-2xl border border-white/10 bg-white/10 p-8 text-center text-white backdrop-blur-xl"
+    >
+      <div class="mb-4 text-5xl">⏳</div>
+      <h1 class="mb-3 bg-gradient-to-r from-blue-200 to-purple-200 bg-clip-text text-2xl font-bold text-transparent">
+        Signing you in
+      </h1>
+      <p class="mb-6 text-blue-100/80">Confirming your email address — this only takes a moment.</p>
+      <noscript>
+        <p class="text-blue-100/80">
+          JavaScript is required to finish confirming your email.
+          <a href="/auth/signin" class="text-purple-300 hover:underline">Back to sign in</a>
+        </p>
+      </noscript>
+    </div>
+  </div>
+</Layout>
+
+<script>
+  const invalidLink = `/auth/signin?error=${encodeURIComponent("Confirmation link is invalid or has expired")}`;
+
+  const search = new URLSearchParams(window.location.search);
+  const fragment = new URLSearchParams(window.location.hash.slice(1));
+
+  const code = search.get("code");
+  const accessToken = fragment.get("access_token");
+  const refreshToken = fragment.get("refresh_token");
+
+  const payload = code
+    ? { code }
+    : accessToken && refreshToken
+      ? { access_token: accessToken, refresh_token: refreshToken }
+      : null;
+
+  if (search.get("error") || !payload) {
+    window.location.replace(invalidLink);
+  } else {
+    fetch("/api/auth/callback", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    })
+      .then((response) => {
+        // Drop the credential from the address bar before moving on.
+        window.history.replaceState(null, "", window.location.pathname);
+        window.location.replace(response.ok ? "/dashboard" : invalidLink);
+      })
+      .catch(() => window.location.replace(invalidLink));
+  }
+</script>
