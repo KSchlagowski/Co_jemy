@@ -21,10 +21,10 @@ export interface QuotaInfo {
 }
 
 export type SpoonacularResult =
-  | { ok: true; recipes: RecipeCandidate[]; quota: QuotaInfo }
+  | { ok: true; recipes: RecipeCandidate[]; quota?: QuotaInfo }
   | {
       ok: false;
-      reason: "quota_exhausted" | "http_error" | "not_configured";
+      reason: "quota_exhausted" | "http_error" | "not_configured" | "network_error";
       status: number;
       quota?: QuotaInfo;
     };
@@ -37,10 +37,12 @@ export interface SearchParams {
 }
 
 function parseQuota(headers: Headers): QuotaInfo | undefined {
-  const used = Number(headers.get("X-API-Quota-Used"));
-  const request = Number(headers.get("X-API-Quota-Request"));
-  const left = Number(headers.get("X-API-Quota-Left"));
-  if (Number.isNaN(used) || Number.isNaN(request) || Number.isNaN(left)) {
+  const raw = ["X-API-Quota-Used", "X-API-Quota-Request", "X-API-Quota-Left"].map((h) => headers.get(h));
+  if (raw.some((v) => !v)) {
+    return undefined;
+  }
+  const [used, request, left] = raw.map(Number);
+  if ([used, request, left].some(Number.isNaN)) {
     return undefined;
   }
   return { used, request, left };
@@ -75,7 +77,14 @@ async function callApi(
   }
   url.searchParams.set("apiKey", SPOONACULAR_API_KEY);
 
-  const response = await fetch(url);
+  let response: Response;
+  try {
+    response = await fetch(url);
+  } catch {
+    // Caught, not rethrown: a thrown fetch error is the one path that could
+    // surface the key-bearing URL in Workers observability.
+    return { ok: false, reason: "network_error", status: 0 };
+  }
   const quota = parseQuota(response.headers);
 
   if (response.status === 402) {
@@ -85,8 +94,13 @@ async function callApi(
     return { ok: false, reason: "http_error", status: response.status, quota };
   }
 
-  const body = (await response.json()) as unknown;
-  return { ok: true, recipes: extract(body), quota: quota ?? { used: -1, request: -1, left: -1 } };
+  let body: unknown;
+  try {
+    body = await response.json();
+  } catch {
+    return { ok: false, reason: "network_error", status: response.status, quota };
+  }
+  return { ok: true, recipes: extract(body), quota };
 }
 
 /**
@@ -97,7 +111,8 @@ export function searchRecipes(params: SearchParams): Promise<SpoonacularResult> 
   const query: Record<string, string> = { addRecipeInformation: "true" };
   if (params.cuisine) query.cuisine = params.cuisine;
   if (params.number !== undefined) query.number = String(params.number);
-  if (params.offset !== undefined) query.offset = String(params.offset);
+  // Provider caps offset at 900; clamp so a bad value can't burn a quota point on a guaranteed error.
+  if (params.offset !== undefined) query.offset = String(Math.min(Math.max(params.offset, 0), 900));
   if (params.sort) query.sort = params.sort;
 
   return callApi("/recipes/complexSearch", query, (body) => {

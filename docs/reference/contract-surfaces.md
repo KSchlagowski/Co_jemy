@@ -1,6 +1,6 @@
 # Contract Surfaces — load-bearing names registry
 
-Names and constraints that later changes must not silently break. Seeded by the `spoonacular-retrieval-spike` change (2026-07-19); grows as changes land. Sources: PRD FR-010/FR-011, Spoonacular terms (researched 2026-07-18), measured spike data (`context/changes/spoonacular-retrieval-spike/findings.md`).
+Names and constraints that later changes must not silently break. Seeded by the `spoonacular-retrieval-spike` change (2026-07-19); grows as changes land. Sources: PRD FR-010/FR-011, Spoonacular terms (researched 2026-07-18), measured spike data (`context/archive/2026-07-16-spoonacular-retrieval-spike/findings.md`).
 
 ## Spoonacular data: what may be persisted
 
@@ -46,9 +46,9 @@ Cost model confirmed exact: 1 point/call + 0.035/recipe returned. Calls dominate
 
 ## `src/lib/spoonacular.ts` public surface
 
-- `searchRecipes(params: { cuisine?; number?; offset?; sort?: "random" }): Promise<SpoonacularResult>` — always sends `addRecipeInformation=true`, never nutrition flags. `offset` ≤ 900 (provider cap).
+- `searchRecipes(params: { cuisine?; number?; offset?; sort?: "random" }): Promise<SpoonacularResult>` — always sends `addRecipeInformation=true`, never nutrition flags. `offset` is clamped to 0–900 in code (provider cap).
 - `getRecipeById(id: number): Promise<SpoonacularResult>` — the slots-1/2 re-fetch path.
-- `SpoonacularResult` — discriminated union: `{ ok: true; recipes: RecipeCandidate[]; quota: QuotaInfo }` | `{ ok: false; reason: "quota_exhausted" | "http_error" | "not_configured"; status; quota? }`.
+- `SpoonacularResult` — discriminated union: `{ ok: true; recipes: RecipeCandidate[]; quota?: QuotaInfo }` | `{ ok: false; reason: "quota_exhausted" | "http_error" | "not_configured" | "network_error"; status; quota? }`.
 - `RecipeCandidate` — only what a card needs: `id`, `title`, `image`, `summary`, `sourceName`, `sourceUrl`, `spoonacularSourceUrl`.
-- `QuotaInfo` — `{ used, request, left }` from the `X-API-Quota-*` headers; use it for runtime budget tracking.
-- The `apiKey` travels as a query param: the module never logs, throws, or returns a URL containing it. Keep it that way.
+- `QuotaInfo` — `{ used, request, left }` from the `X-API-Quota-*` headers; use it for runtime budget tracking. `quota` is absent (undefined) when the provider omits or blanks the headers — never guessed.
+- The `apiKey` travels as a query param: the module never logs, throws, or returns a URL containing it — fetch/parse failures are caught and returned as typed `network_error` results. Keep it that way.
