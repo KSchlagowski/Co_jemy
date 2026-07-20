@@ -240,9 +240,9 @@ No data migration. Existing unconfirmed test accounts (if any) predate the templ
 
 #### Manual
 
-- [x] 2.1 Site URL set to the production workers.dev origin (set to `https://co-jemy.mediewilnp.workers.dev/auth/callback`, not the bare origin: with the email template locked, `{{ .ConfirmationURL }}` redirects to Site URL, so Site URL *is* the callback target)
-- [x] 2.2 Confirm-signup template uses the `token_hash` link to `/api/auth/confirm` (VOID — hosted Supabase gates template editing behind custom SMTP, which the plan ruled out under "What We're NOT Doing". Superseded by client-forwarded callback: new `src/pages/auth/callback.astro` + `src/pages/api/auth/callback.ts` handle the PKCE `?code=` and implicit-fragment cases. `confirm.ts` retained but unused)
-- [x] 2.3 "Confirm email" toggle verified ON
+- [x] 2.1 Site URL set to the production workers.dev origin (set to `https://co-jemy.mediewilnp.workers.dev/auth/callback`, not the bare origin: with the email template locked, `{{ .ConfirmationURL }}` redirects to Site URL, so Site URL *is* the callback target) — d6b4872
+- [x] 2.2 Confirm-signup template uses the `token_hash` link to `/api/auth/confirm` (VOID — hosted Supabase gates template editing behind custom SMTP, which the plan ruled out under "What We're NOT Doing". Superseded by client-forwarded callback: new `src/pages/auth/callback.astro` + `src/pages/api/auth/callback.ts` handle the PKCE `?code=` and implicit-fragment cases. `confirm.ts` retained but unused) — d6b4872
+- [x] 2.3 "Confirm email" toggle verified ON — d6b4872
 
 ### Phase 3: CI-proven deploy + live verification
 
