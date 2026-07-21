@@ -475,32 +475,32 @@ This is the repo's first migration, so `supabase/migrations/` is created here. B
 
 #### Automated
 
-- [x] 3.1 Type checking passes
-- [x] 3.2 Linting passes
+- [x] 3.1 Type checking passes — cd9c9c3
+- [x] 3.2 Linting passes — cd9c9c3
 
 #### Manual
 
-- [x] 3.3 Unauthenticated POST returns 401 and makes no provider call
-- [x] 3.4 Signed-in POST returns 200 with 4 proposals across 2 cuisines
-- [x] 3.5 `proposals` gains 4 correct rows; `requested_type` is null
-- [x] 3.6 `recipes` upsert handles repeat ids without error
-- [x] 3.7 No response body leaks a key, URL, or provider error string
+- [x] 3.3 Unauthenticated POST returns 401 and makes no provider call — cd9c9c3
+- [x] 3.4 Signed-in POST returns 200 with 4 proposals across 2 cuisines — cd9c9c3
+- [x] 3.5 `proposals` gains 4 correct rows; `requested_type` is null — cd9c9c3
+- [x] 3.6 `recipes` upsert handles repeat ids without error — cd9c9c3
+- [x] 3.7 No response body leaks a key, URL, or provider error string — cd9c9c3
 
 ### Phase 4: Dashboard UI
 
 #### Automated
 
-- [ ] 4.1 Type checking passes
-- [ ] 4.2 Linting passes, including react-compiler and `astro/no-set-html-directive`
+- [x] 4.1 Type checking passes
+- [x] 4.2 Linting passes, including react-compiler and `astro/no-set-html-directive`
 
 #### Manual
 
-- [ ] 4.3 Clicking renders 4 cards; double-clicks do not fire two requests
-- [ ] 4.4 Every card shows a publisher name and a working new-tab link
-- [ ] 4.5 Cards render legibly at 375px and in the 2-column layout
-- [ ] 4.6 Null or broken image shows the placeholder
-- [ ] 4.7 No excerpt contains markup, a spoonacular.com mention, or a calorie figure
-- [ ] 4.8 A forced 402 shows the quota-specific message with no retry affordance
+- [x] 4.3 Clicking renders 4 cards; double-clicks do not fire two requests
+- [x] 4.4 Every card shows a publisher name and a working new-tab link
+- [x] 4.5 Cards render legibly at 375px and in the 2-column layout
+- [x] 4.6 Null or broken image shows the placeholder
+- [x] 4.7 No excerpt contains markup, a spoonacular.com mention, or a calorie figure
+- [x] 4.8 A forced 402 shows the quota-specific message with no retry affordance
 
 ### Phase 5: Deploy & Live Verification
 
