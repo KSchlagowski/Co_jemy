@@ -506,13 +506,13 @@ This is the repo's first migration, so `supabase/migrations/` is created here. B
 
 #### Automated
 
-- [x] 5.1 CI run is green on the merge commit (run 29806437645 on b6d64cd — astro sync + lint + build + wrangler deploy all green)
-- [x] 5.2 Production responds with 200
+- [x] 5.1 CI run is green on the merge commit (run 29806437645 on b6d64cd — astro sync + lint + build + wrangler deploy all green) — 5d761ac
+- [x] 5.2 Production responds with 200 — 5d761ac
 
 #### Manual
 
-- [x] 5.3 Production "Get proposals" returns 4 cards spanning 2 cuisines
-- [x] 5.4 At least one publisher link resolves to a live external page
-- [x] 5.5 Supabase shows 4 new `proposals` rows with the two requested cuisines
-- [x] 5.6 Measured quota cost is ≈3.40 points
-- [x] 5.7 Dashboard is usable on a real phone browser
+- [x] 5.3 Production "Get proposals" returns 4 cards spanning 2 cuisines — 5d761ac
+- [x] 5.4 At least one publisher link resolves to a live external page — 5d761ac
+- [x] 5.5 Supabase shows 4 new `proposals` rows with the two requested cuisines — 5d761ac
+- [x] 5.6 Measured quota cost is ≈3.40 points — 5d761ac
+- [x] 5.7 Dashboard is usable on a real phone browser — 5d761ac
