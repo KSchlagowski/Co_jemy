@@ -462,29 +462,29 @@ This is the repo's first migration, so `supabase/migrations/` is created here. B
 
 #### Automated
 
-- [x] 2.1 Type checking passes
-- [x] 2.2 Linting passes, including the react-compiler rule
+- [x] 2.1 Type checking passes — d2d7513
+- [x] 2.2 Linting passes, including the react-compiler rule — d2d7513
 
 #### Manual
 
-- [x] 2.3 Sanitizer output contains no markup, backlinks, or macro figures
-- [x] 2.4 Assembled set returns 4 distinct recipes spanning both requested cuisines
-- [x] 2.5 Repeated calls return visibly different recipes
+- [x] 2.3 Sanitizer output contains no markup, backlinks, or macro figures — d2d7513
+- [x] 2.4 Assembled set returns 4 distinct recipes spanning both requested cuisines — d2d7513
+- [x] 2.5 Repeated calls return visibly different recipes — d2d7513
 
 ### Phase 3: Proposals Endpoint
 
 #### Automated
 
-- [ ] 3.1 Type checking passes
-- [ ] 3.2 Linting passes
+- [x] 3.1 Type checking passes
+- [x] 3.2 Linting passes
 
 #### Manual
 
-- [ ] 3.3 Unauthenticated POST returns 401 and makes no provider call
-- [ ] 3.4 Signed-in POST returns 200 with 4 proposals across 2 cuisines
-- [ ] 3.5 `proposals` gains 4 correct rows; `requested_type` is null
-- [ ] 3.6 `recipes` upsert handles repeat ids without error
-- [ ] 3.7 No response body leaks a key, URL, or provider error string
+- [x] 3.3 Unauthenticated POST returns 401 and makes no provider call
+- [x] 3.4 Signed-in POST returns 200 with 4 proposals across 2 cuisines
+- [x] 3.5 `proposals` gains 4 correct rows; `requested_type` is null
+- [x] 3.6 `recipes` upsert handles repeat ids without error
+- [x] 3.7 No response body leaks a key, URL, or provider error string
 
 ### Phase 4: Dashboard UI
 
