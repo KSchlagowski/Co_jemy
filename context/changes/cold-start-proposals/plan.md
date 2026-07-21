@@ -490,29 +490,29 @@ This is the repo's first migration, so `supabase/migrations/` is created here. B
 
 #### Automated
 
-- [x] 4.1 Type checking passes
-- [x] 4.2 Linting passes, including react-compiler and `astro/no-set-html-directive`
+- [x] 4.1 Type checking passes — b6d64cd
+- [x] 4.2 Linting passes, including react-compiler and `astro/no-set-html-directive` — b6d64cd
 
 #### Manual
 
-- [x] 4.3 Clicking renders 4 cards; double-clicks do not fire two requests
-- [x] 4.4 Every card shows a publisher name and a working new-tab link
-- [x] 4.5 Cards render legibly at 375px and in the 2-column layout
-- [x] 4.6 Null or broken image shows the placeholder
-- [x] 4.7 No excerpt contains markup, a spoonacular.com mention, or a calorie figure
-- [x] 4.8 A forced 402 shows the quota-specific message with no retry affordance
+- [x] 4.3 Clicking renders 4 cards; double-clicks do not fire two requests — b6d64cd
+- [x] 4.4 Every card shows a publisher name and a working new-tab link — b6d64cd
+- [x] 4.5 Cards render legibly at 375px and in the 2-column layout — b6d64cd
+- [x] 4.6 Null or broken image shows the placeholder — b6d64cd
+- [x] 4.7 No excerpt contains markup, a spoonacular.com mention, or a calorie figure — b6d64cd
+- [x] 4.8 A forced 402 shows the quota-specific message with no retry affordance — b6d64cd
 
 ### Phase 5: Deploy & Live Verification
 
 #### Automated
 
-- [ ] 5.1 CI run is green on the merge commit
-- [ ] 5.2 Production responds with 200
+- [x] 5.1 CI run is green on the merge commit (run 29806437645 on b6d64cd — astro sync + lint + build + wrangler deploy all green)
+- [x] 5.2 Production responds with 200
 
 #### Manual
 
-- [ ] 5.3 Production "Get proposals" returns 4 cards spanning 2 cuisines
-- [ ] 5.4 At least one publisher link resolves to a live external page
-- [ ] 5.5 Supabase shows 4 new `proposals` rows with the two requested cuisines
-- [ ] 5.6 Measured quota cost is ≈3.40 points
-- [ ] 5.7 Dashboard is usable on a real phone browser
+- [x] 5.3 Production "Get proposals" returns 4 cards spanning 2 cuisines
+- [x] 5.4 At least one publisher link resolves to a live external page
+- [x] 5.5 Supabase shows 4 new `proposals` rows with the two requested cuisines
+- [x] 5.6 Measured quota cost is ≈3.40 points
+- [x] 5.7 Dashboard is usable on a real phone browser
