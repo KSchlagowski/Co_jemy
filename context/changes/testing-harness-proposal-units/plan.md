@@ -476,14 +476,14 @@ migration. CI wiring of the unit gate is deferred to rollout Phase 4 per the les
 
 #### Automated
 
-- [x] 2.1 Two-call/args/cost tests pass
-- [x] 2.2 Degrade-path no-leak test passes
-- [x] 2.3 Lint passes
+- [x] 2.1 Two-call/args/cost tests pass — 9fceb3d
+- [x] 2.2 Degrade-path no-leak test passes — 9fceb3d
+- [x] 2.3 Lint passes — 9fceb3d
 
 #### Manual
 
-- [x] 2.4 `PER_CALL = 40` reddens the number/cost tests (then restored)
-- [x] 2.5 A third `searchRecipes` call reddens the count test (then restored)
+- [x] 2.4 `PER_CALL = 40` reddens the number/cost tests (then restored) — 9fceb3d
+- [x] 2.5 A third `searchRecipes` call reddens the count test (then restored) — 9fceb3d
 
 ### Phase 3: Provider-Edge & Auth-Gate Leak Guards
 
@@ -496,9 +496,9 @@ migration. CI wiring of the unit gate is deferred to rollout Phase 4 per the les
 
 #### Manual
 
-- [ ] 3.5 Removing `addRecipeInformation` reddens the param test (then restored)
-- [ ] 3.6 Weakening the offset clamp reddens the clamp test (then restored)
-- [ ] 3.7 Removing the `if (!user)` guard reddens the auth-gate test (then restored)
+- [x] 3.5 Removing `addRecipeInformation` reddens the param test (then restored)
+- [x] 3.6 Weakening the offset clamp reddens the clamp test (then restored)
+- [x] 3.7 Removing the `if (!user)` guard reddens the auth-gate test (then restored)
 
 ### Phase 4: Cookbook + Status Sync
 
