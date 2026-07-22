@@ -463,14 +463,14 @@ migration. CI wiring of the unit gate is deferred to rollout Phase 4 per the les
 
 #### Automated
 
-- [x] 1.1 `npm test` runs and the smoke test passes
-- [x] 1.2 Lint (incl. strict type-check) passes on new files
-- [x] 1.3 Astro types in sync and build unaffected (`astro sync && build`)
+- [x] 1.1 `npm test` runs and the smoke test passes — 1fc2734
+- [x] 1.2 Lint (incl. strict type-check) passes on new files — 1fc2734
+- [x] 1.3 Astro types in sync and build unaffected (`astro sync && build`) — 1fc2734
 
 #### Manual
 
-- [x] 1.4 `npm run test:watch` starts and re-runs on change
-- [x] 1.5 Smoke test genuinely exercises `astro:env` resolution
+- [x] 1.4 `npm run test:watch` starts and re-runs on change — 1fc2734
+- [x] 1.5 Smoke test genuinely exercises `astro:env` resolution — 1fc2734
 
 ### Phase 2: `buildColdStartSet` Two-Call Invariant
 
@@ -482,8 +482,8 @@ migration. CI wiring of the unit gate is deferred to rollout Phase 4 per the les
 
 #### Manual
 
-- [ ] 2.4 `PER_CALL = 40` reddens the number/cost tests (then restored)
-- [ ] 2.5 A third `searchRecipes` call reddens the count test (then restored)
+- [x] 2.4 `PER_CALL = 40` reddens the number/cost tests (then restored)
+- [x] 2.5 A third `searchRecipes` call reddens the count test (then restored)
 
 ### Phase 3: Provider-Edge & Auth-Gate Leak Guards
 
