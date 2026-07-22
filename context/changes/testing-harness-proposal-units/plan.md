@@ -489,25 +489,25 @@ migration. CI wiring of the unit gate is deferred to rollout Phase 4 per the les
 
 #### Automated
 
-- [x] 3.1 `searchRecipes` param + clamp tests pass
-- [x] 3.2 `not_configured` zero-fetch guard passes (or consciously dropped per fallback)
-- [x] 3.3 Auth-gate 401 + zero-fetch test passes
-- [x] 3.4 Lint passes
+- [x] 3.1 `searchRecipes` param + clamp tests pass — 8c43730
+- [x] 3.2 `not_configured` zero-fetch guard passes (or consciously dropped per fallback) — 8c43730
+- [x] 3.3 Auth-gate 401 + zero-fetch test passes — 8c43730
+- [x] 3.4 Lint passes — 8c43730
 
 #### Manual
 
-- [x] 3.5 Removing `addRecipeInformation` reddens the param test (then restored)
-- [x] 3.6 Weakening the offset clamp reddens the clamp test (then restored)
-- [x] 3.7 Removing the `if (!user)` guard reddens the auth-gate test (then restored)
+- [x] 3.5 Removing `addRecipeInformation` reddens the param test (then restored) — 8c43730
+- [x] 3.6 Weakening the offset clamp reddens the clamp test (then restored) — 8c43730
+- [x] 3.7 Removing the `if (!user)` guard reddens the auth-gate test (then restored) — 8c43730
 
 ### Phase 4: Cookbook + Status Sync
 
 #### Automated
 
-- [ ] 4.1 §6.1 no longer contains "TBD"
-- [ ] 4.2 Full suite still green after doc edits
+- [x] 4.1 §6.1 no longer contains "TBD"
+- [x] 4.2 Full suite still green after doc edits
 
 #### Manual
 
-- [ ] 4.3 A reader can add a new unit test from §6.1 alone
-- [ ] 4.4 §3 Phase 1 status honestly reflects "risk #1 only"
+- [x] 4.3 A reader can add a new unit test from §6.1 alone
+- [x] 4.4 §3 Phase 1 status honestly reflects "risk #1 only"
