@@ -504,10 +504,10 @@ migration. CI wiring of the unit gate is deferred to rollout Phase 4 per the les
 
 #### Automated
 
-- [x] 4.1 §6.1 no longer contains "TBD"
-- [x] 4.2 Full suite still green after doc edits
+- [x] 4.1 §6.1 no longer contains "TBD" — 8c4b830
+- [x] 4.2 Full suite still green after doc edits — 8c4b830
 
 #### Manual
 
-- [x] 4.3 A reader can add a new unit test from §6.1 alone
-- [x] 4.4 §3 Phase 1 status honestly reflects "risk #1 only"
+- [x] 4.3 A reader can add a new unit test from §6.1 alone — 8c4b830
+- [x] 4.4 §3 Phase 1 status honestly reflects "risk #1 only" — 8c4b830

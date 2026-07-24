@@ -30,3 +30,14 @@ pnpm-debug.log*
 # spike scratch: vendor reference dumps (re-downloadable)
 spoon.json
 docs.html
+
+# playwright
+# auth storage state — contains live Supabase session tokens; never commit
+playwright/.auth/
+# generated E2E output
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
+# browser-driven MCP scratch logs
+.playwright-cli/

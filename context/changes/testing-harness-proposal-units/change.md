@@ -1,7 +1,7 @@
 ---
 change_id: testing-harness-proposal-units
 title: Harness + proposal-engine units (test rollout Phase 1)
-status: implementing
+status: implemented
 created: 2026-07-22
 updated: 2026-07-22
 archived_at: null
