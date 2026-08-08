@@ -222,21 +222,21 @@ Forward-only migration; no existing data affected. Prod apply is human-run (`npx
 
 #### Automated
 
-- [x] 1.1 Migration file exists under `supabase/migrations/` and `npm run lint` passes
-- [x] 1.2 Local apply clean via `npx supabase db reset` (skip if no local stack)
+- [x] 1.1 Migration file exists under `supabase/migrations/` and `npm run lint` passes — c295af6
+- [x] 1.2 Local apply clean via `npx supabase db reset` (skip if no local stack) — c295af6
 
 #### Manual
 
-- [x] 1.3 Human applies migration to prod: `npx supabase db push --linked`
-- [x] 1.4 Studio check: table, composite PK, check constraint, three policies, no delete policy
+- [x] 1.3 Human applies migration to prod: `npx supabase db push --linked` — c295af6
+- [x] 1.4 Studio check: table, composite PK, check constraint, three policies, no delete policy — c295af6
 
 ### Phase 2: Rating Endpoint + Unit Tests
 
 #### Automated
 
-- [ ] 2.1 `npm test` green (new ratings suite + existing tests)
-- [ ] 2.2 `npm run lint` passes
-- [ ] 2.3 `npm run build` passes
+- [x] 2.1 `npm test` green (new ratings suite + existing tests)
+- [x] 2.2 `npm run lint` passes
+- [x] 2.3 `npm run build` passes
 
 ### Phase 3: Rating UI on Proposal Cards
 
