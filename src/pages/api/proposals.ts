@@ -14,8 +14,12 @@ const STATUS_BY_REASON: Record<FailureReason, number> = {
   network_error: 502,
 };
 
-/** The card-facing shape: sanitized excerpt only — the raw HTML `summary` never crosses to the client. */
-interface ProposalPayload {
+/**
+ * The card-facing shape: sanitized excerpt only — the raw HTML `summary` never crosses to
+ * the client. Re-exported by `@/components/proposals/types` so the island and the endpoint
+ * share one declaration of the wire contract rather than two hand-synced copies.
+ */
+export interface ProposalPayload {
   id: number;
   title: string;
   image: string | null;
@@ -54,31 +58,38 @@ function json(body: unknown, status: number): Response {
  * `reason` code escapes. The key travels as a query param inside that module and stays there.
  */
 export const POST: APIRoute = async (context) => {
-  // Middleware guards /dashboard, not /api/**, so this check is the only thing between an
-  // anonymous request and a spent quota point — it comes before any provider call.
-  const user = context.locals.user;
-  if (!user) {
-    return json({ ok: false, reason: "unauthenticated" }, 401);
+  try {
+    // Middleware guards /dashboard, not /api/**, so this check is the only thing between an
+    // anonymous request and a spent quota point — it comes before any provider call.
+    const user = context.locals.user;
+    if (!user) {
+      return json({ ok: false, reason: "unauthenticated" }, 401);
+    }
+
+    const supabase = createClient(context.request.headers, context.cookies);
+    if (!supabase) {
+      return json({ ok: false, reason: "service_unavailable" }, 503);
+    }
+
+    const result = await buildColdStartSet();
+    if (!result.ok) {
+      return json({ ok: false, reason: result.reason }, STATUS_BY_REASON[result.reason]);
+    }
+
+    const { proposals, degraded } = result;
+
+    // Persist before responding, but never fail the set on a write error: the quota point is
+    // already spent and non-refundable, the recipes are still useful, the row is the retryable
+    // part. Recipes land before proposals — the FK points that way.
+    const recorded = await persist(supabase, user.id, proposals);
+
+    return json({ ok: true, proposals: proposals.map(toPayload), recorded, degraded }, 200);
+  } catch {
+    // The envelope is the convention later endpoints inherit, so nothing escapes untyped.
+    // Swallowed rather than rethrown: an unexpected throw is the one path that could carry
+    // the key-bearing provider URL into Workers observability.
+    return json({ ok: false, reason: "internal_error" }, 500);
   }
-
-  const supabase = createClient(context.request.headers, context.cookies);
-  if (!supabase) {
-    return json({ ok: false, reason: "service_unavailable" }, 503);
-  }
-
-  const result = await buildColdStartSet();
-  if (!result.ok) {
-    return json({ ok: false, reason: result.reason }, STATUS_BY_REASON[result.reason]);
-  }
-
-  const { proposals, degraded } = result;
-
-  // Persist before responding, but never fail the set on a write error: the quota point is
-  // already spent and non-refundable, the recipes are still useful, the row is the retryable
-  // part. Recipes land before proposals — the FK points that way.
-  const recorded = await persist(supabase, user.id, proposals);
-
-  return json({ ok: true, proposals: proposals.map(toPayload), recorded, degraded }, 200);
 };
 
 async function persist(

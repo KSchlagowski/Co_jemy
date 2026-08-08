@@ -194,7 +194,7 @@ const NUTRITION_FIGURE = /\b\d+\s*(k?cal|calories|g\s+of\s+(protein|fat|carbo?hy
 **Contract**: An async `buildColdStartSet()` returning a discriminated union mirroring `SpoonacularResult`'s style: either `{ ok: true; proposals: ProposedRecipe[]; degraded: boolean }` or `{ ok: false; reason; status }`, where `ProposedRecipe` is `RecipeCandidate & { requestedCuisine: string; excerpt: string | null }`.
 
 Behavior:
-- Issue exactly **two** `searchRecipes` calls, one per picked cuisine, each with `number: 20`, `sort: "random"`, and an independent random `offset` in 0–50. Two calls is the floor and the ceiling — never one call per slot.
+- Issue exactly **two** `searchRecipes` calls, one per picked cuisine, each with `number: 20`, `sort: "random"`, and an independent random `offset` in 0–20 (the measured bound from §2 above — an earlier draft of this bullet said 0–50, which the 2026-07-20 measurement disproved). Two calls is the floor and the ceiling — never one call per slot.
 - Run the calls concurrently (`Promise.all`); they are independent and latency is user-facing.
 - If **both** calls fail, propagate the first failure reason. If **one** fails, continue with the survivor — 4 cards from a single cuisine beats an error screen, even though it misses the 2-cuisine target. Set `degraded: true` on the success result so the endpoint and UI can note it.
 - `degraded` reports **cuisine coverage of the assembled set** (`< 2` distinct cuisines), not call failure. A call can return HTTP 200 with an empty array — a thin cuisine, or an offset past its corpus — which produces a single-cuisine set from two healthy calls. Keying the flag to call failure read `false` on exactly that case, which is the US-02 violation the flag exists to surface.
@@ -423,6 +423,8 @@ No test runner exists in this project (it arrives with Module 3), so verificatio
 The two provider calls run concurrently, so user-facing latency is one round trip, not two. Over-fetching `number=20` per call brings the set to 3.40 points against a 2.00-point call floor (1.40 of over-fetch across both calls) — a deliberate trade, since call count dominates cost and the surplus is what guarantees 4 survivors after validation drops and dedup. The `proposals(user_id, proposed_at desc)` index is laid down now because S-03 and S-05 both read along it.
 
 ## Migration Notes
+
+**Addendum (impl review, 2026-08-08):** the shipped migration declares `user_id uuid not null references auth.users (id) on delete cascade`. The cascade was not in the Phase 1 contract above; it is recorded here because deleting an account now silently removes that account's proposal history. That is the intended semantics — the PRD guardrail is about surviving a *provider* data purge, not a user-initiated account deletion — but on the repo's first migration the behavior should be written down rather than inferred from the DDL.
 
 This is the repo's first migration, so `supabase/migrations/` is created here. Both tables are additive — nothing existing is altered — so the migration is safe across a `wrangler rollback`, which reverts Worker code but leaves schema in place. Rolling back to a pre-S-02 Worker with the tables present is harmless; the reverse (code without schema) is not, which is why the migration is applied before the merge. Altering or dropping production tables is a human-only action.
 

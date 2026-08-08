@@ -70,6 +70,9 @@ const astroConfig = tseslint.config({
 
 export default tseslint.config(
   includeIgnoreFile(gitignorePath),
+  // Agent-harness scripts, not app code — they sit outside tsconfig's project service, so
+  // type-aware linting can only fail on them. `npm run lint` is a hard CI gate before deploy.
+  { ignores: [".claude/**"] },
   baseConfig,
   reactConfig,
   eslintPluginAstro.configs["flat/recommended"],

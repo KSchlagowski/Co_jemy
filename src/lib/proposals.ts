@@ -36,12 +36,20 @@ const MIN_EXCERPT = 40;
 const NUTRITION_FIGURE = /\b\d+\s*(k?cal|calories|g\s+of\s+(protein|fat|carbo?hydrates?)|grams?\s+of)/i;
 
 // Nutrition claims the provider phrases without a bare macro figure — "covers 12% of your
-// daily requirements", "Watching your figure?" — which lead into macro talk regardless.
-const NUTRITION_CLAIM = /\bcovers?\s*\d+%|\b\d+%\s*of\s+your\s+daily|watching your figure/i;
+// daily requirements", "Watching your figure?", "is high in protein", "if you're following a
+// gluten free diet" — which are health claims in their own right and lead into macro talk
+// regardless. This list is *known incomplete*: it is enumerated from sampled payloads, not
+// derived from a provider schema, so a new phrasing leaks silently. Widen it on sight rather
+// than assuming the current set is closed (see context/foundation/lessons.md).
+const NUTRITION_CLAIM =
+  /\bcovers?\s*\d+%|\b\d+%\s*of\s+your\s+daily|watching your figure|\b(?:high|low|rich)\s+in\s+\w+|\b(?:gluten|dairy|lactose)[-\s]free\b|\bhealthy\b|\bdiet\b|\bcalorie|\bnutrition/i;
 
 // Anchor text survives tag stripping, so the provider's own backlink wording has to be cut too.
 const PROVIDER_MENTION = /spoonacular/i;
 
+// Named entities left undecoded render as literal "Cr&egrave;me" on the card, so the table has
+// to cover what food writing actually contains — typographic punctuation and Latin-1 accents —
+// not just the five structural XML entities. Numeric forms (&#233; / &#xE9;) are handled above.
 const ENTITIES: Record<string, string> = {
   amp: "&",
   lt: "<",
@@ -49,16 +57,59 @@ const ENTITIES: Record<string, string> = {
   quot: '"',
   apos: "'",
   nbsp: " ",
+  hellip: "…",
+  mdash: "—",
+  ndash: "–",
+  lsquo: "‘",
+  rsquo: "’",
+  ldquo: "“",
+  rdquo: "”",
+  deg: "°",
+  frac12: "½",
+  frac14: "¼",
+  frac34: "¾",
+  agrave: "à",
+  aacute: "á",
+  acirc: "â",
+  atilde: "ã",
+  auml: "ä",
+  aring: "å",
+  ccedil: "ç",
+  egrave: "è",
+  eacute: "é",
+  ecirc: "ê",
+  euml: "ë",
+  igrave: "ì",
+  iacute: "í",
+  icirc: "î",
+  iuml: "ï",
+  ntilde: "ñ",
+  ograve: "ò",
+  oacute: "ó",
+  ocirc: "ô",
+  otilde: "õ",
+  ouml: "ö",
+  ugrave: "ù",
+  uacute: "ú",
+  ucirc: "û",
+  uuml: "ü",
+  szlig: "ß",
 };
+
+// String.fromCodePoint throws RangeError past 0x10FFFF, and an unvalidated numeric entity
+// would turn one malformed summary into a 500 for the whole set. Out-of-range stays literal.
+function fromCodePoint(value: number): string | null {
+  return Number.isInteger(value) && value >= 0 && value <= 0x10ffff ? String.fromCodePoint(value) : null;
+}
 
 function decodeEntities(text: string): string {
   return text.replace(/&(#x[0-9a-f]+|#\d+|\w+);/gi, (whole, code: string) => {
     const lower = code.toLowerCase();
     if (lower.startsWith("#x")) {
-      return String.fromCodePoint(Number.parseInt(lower.slice(2), 16));
+      return fromCodePoint(Number.parseInt(lower.slice(2), 16)) ?? whole;
     }
     if (lower.startsWith("#")) {
-      return String.fromCodePoint(Number(lower.slice(1)));
+      return fromCodePoint(Number(lower.slice(1))) ?? whole;
     }
     return ENTITIES[lower] ?? whole;
   });

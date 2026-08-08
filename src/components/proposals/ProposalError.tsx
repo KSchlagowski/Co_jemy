@@ -16,6 +16,7 @@ const MESSAGE_BY_REASON: Record<string, string> = {
   service_unavailable: "Something's misconfigured on our side — this one's on us, not you. Please try again later.",
   unauthenticated: "Your session has expired. Please sign in again.",
   no_results: "We couldn't find recipes this time. Try again shortly.",
+  internal_error: "Something went wrong on our side. Please try again in a moment.",
 };
 
 export function ProposalError({ reason }: ProposalErrorProps) {

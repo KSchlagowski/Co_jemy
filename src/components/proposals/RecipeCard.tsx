@@ -6,12 +6,31 @@ interface RecipeCardProps {
   proposal: Proposal;
 }
 
+// `sourceUrl` is publisher-supplied data relayed by the provider — the one place in this
+// slice where untrusted remote input becomes an executable-capable attribute. Anything that
+// is not plain http(s) is discarded; the card already renders fine without a link.
+function safeUrl(url: string | null): URL | null {
+  if (!url) {
+    return null;
+  }
+  let parsed: URL;
+  try {
+    parsed = new URL(url);
+  } catch {
+    return null;
+  }
+  return parsed.protocol === "http:" || parsed.protocol === "https:" ? parsed : null;
+}
+
 export function RecipeCard({ proposal }: RecipeCardProps) {
   const [imageFailed, setImageFailed] = useState(false);
 
   // FR-010: the primary link targets the publisher; `spoonacularSourceUrl` is a fallback only
-  // when the publisher link is absent. The `sourceName` credit still renders when neither exists.
-  const link = proposal.sourceUrl ?? proposal.spoonacularSourceUrl;
+  // when the publisher link is absent. The credit still renders when neither exists — and when
+  // the provider omits `sourceName`, the publisher's hostname is attribution we can derive.
+  const source = safeUrl(proposal.sourceUrl);
+  const link = source ?? safeUrl(proposal.spoonacularSourceUrl);
+  const credit = proposal.sourceName ?? source?.hostname.replace(/^www\./, "") ?? null;
   const showImage = proposal.image && !imageFailed;
 
   return (
@@ -40,10 +59,10 @@ export function RecipeCard({ proposal }: RecipeCardProps) {
         {proposal.excerpt && <p className="text-sm leading-relaxed text-blue-100/60">{proposal.excerpt}</p>}
 
         <div className="mt-auto flex items-center justify-between gap-2 pt-2">
-          {proposal.sourceName && <span className="truncate text-xs text-blue-100/50">by {proposal.sourceName}</span>}
+          {credit && <span className="truncate text-xs text-blue-100/50">by {credit}</span>}
           {link && (
             <a
-              href={link}
+              href={link.href}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex shrink-0 items-center gap-1 text-xs font-medium text-purple-300 transition-colors hover:text-purple-200"

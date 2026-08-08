@@ -1,19 +1,15 @@
 /**
- * Client-side mirror of the `/api/proposals` envelope. Kept in sync with `ProposalPayload`
- * and the response shape in `src/pages/api/proposals.ts` — the excerpt arrives already
- * sanitized to plain text, so no HTML ever crosses to the client.
+ * Client-side view of the `/api/proposals` envelope.
+ *
+ * `Proposal` is a type-only re-export of the endpoint's own `ProposalPayload`, so the wire
+ * contract has exactly one declaration — adding a field server-side is a type error here
+ * rather than a silent drift. The import is erased at compile time; no server code reaches
+ * the client bundle. The excerpt arrives already sanitized to plain text, so no HTML crosses.
  */
-export interface Proposal {
-  id: number;
-  title: string;
-  image: string | null;
-  excerpt: string | null;
-  sourceName: string | null;
-  sourceUrl: string | null;
-  spoonacularSourceUrl: string | null;
-  requestedCuisine: string;
-}
+export type { ProposalPayload as Proposal } from "@/pages/api/proposals";
+
+import type { ProposalPayload } from "@/pages/api/proposals";
 
 export type ProposalsResponse =
-  | { ok: true; proposals: Proposal[]; recorded: boolean; degraded: boolean }
+  | { ok: true; proposals: ProposalPayload[]; recorded: boolean; degraded: boolean }
   | { ok: false; reason: string };
