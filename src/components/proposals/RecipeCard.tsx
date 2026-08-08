@@ -1,10 +1,20 @@
 import { useState } from "react";
-import { UtensilsCrossed, ExternalLink } from "lucide-react";
-import type { Proposal } from "@/components/proposals/types";
+import { UtensilsCrossed, ExternalLink, ThumbsUp, ThumbsDown, CircleAlert } from "lucide-react";
+import type { Proposal, RatingResponse, RatingVerdict } from "@/components/proposals/types";
 
 interface RecipeCardProps {
   proposal: Proposal;
 }
+
+// Reason→copy mapping in the ProposalError.tsx style; unknown reasons fall back to the
+// retryable message — a rating tap is cheap to repeat (no quota), unlike a proposal fetch.
+const RATING_RETRY_MESSAGE = "We couldn't save your rating. Try again in a moment.";
+const RATING_MESSAGE_BY_REASON: Record<string, string> = {
+  unauthenticated: "Your session has expired. Please sign in again.",
+  unknown_recipe: "We couldn't match this recipe. Request a fresh set and rate it there.",
+  service_unavailable: "Something's misconfigured on our side — this one's on us, not you. Please try again later.",
+  write_failed: RATING_RETRY_MESSAGE,
+};
 
 // `sourceUrl` is publisher-supplied data relayed by the provider — the one place in this
 // slice where untrusted remote input becomes an executable-capable attribute. Anything that
@@ -24,6 +34,35 @@ function safeUrl(url: string | null): URL | null {
 
 export function RecipeCard({ proposal }: RecipeCardProps) {
   const [imageFailed, setImageFailed] = useState(false);
+
+  // No optimistic selection: `verdict` only ever holds a server-confirmed value (the 200 is
+  // what makes "persisted" true — PRD §Guardrails), so the card can't show a rating that
+  // would vanish on the next session.
+  const [verdict, setVerdict] = useState<RatingVerdict | null>(null);
+  const [ratingPending, setRatingPending] = useState(false);
+  const [ratingError, setRatingError] = useState<string | null>(null);
+
+  async function rate(next: RatingVerdict) {
+    setRatingPending(true);
+    setRatingError(null);
+    try {
+      const res = await fetch("/api/ratings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ spoonacularId: proposal.id, verdict: next }),
+      });
+      const data = (await res.json()) as RatingResponse;
+      if (data.ok) {
+        setVerdict(data.verdict);
+      } else {
+        setRatingError(RATING_MESSAGE_BY_REASON[data.reason] ?? RATING_RETRY_MESSAGE);
+      }
+    } catch {
+      setRatingError(RATING_RETRY_MESSAGE);
+    } finally {
+      setRatingPending(false);
+    }
+  }
 
   // FR-010: the primary link targets the publisher; `spoonacularSourceUrl` is a fallback only
   // when the publisher link is absent. The credit still renders when neither exists — and when
@@ -72,7 +111,60 @@ export function RecipeCard({ proposal }: RecipeCardProps) {
             </a>
           )}
         </div>
+
+        <div className="flex items-center gap-2 border-t border-white/10 pt-3">
+          <RatingButton
+            label="Rate like"
+            active={verdict === "like"}
+            disabled={ratingPending}
+            onClick={() => void rate("like")}
+          >
+            <ThumbsUp className="size-4" />
+          </RatingButton>
+          <RatingButton
+            label="Rate dislike"
+            active={verdict === "dislike"}
+            disabled={ratingPending}
+            onClick={() => void rate("dislike")}
+          >
+            <ThumbsDown className="size-4" />
+          </RatingButton>
+        </div>
+
+        {ratingError && (
+          <p className="flex items-center gap-2 rounded-lg border border-red-500/30 bg-red-900/30 px-3 py-2 text-xs text-red-300">
+            <CircleAlert className="size-4 shrink-0" />
+            {ratingError}
+          </p>
+        )}
       </div>
     </article>
+  );
+}
+
+interface RatingButtonProps {
+  label: string;
+  active: boolean;
+  disabled: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}
+
+function RatingButton({ label, active, disabled, onClick, children }: RatingButtonProps) {
+  return (
+    <button
+      type="button"
+      aria-label={label}
+      aria-pressed={active}
+      disabled={disabled}
+      onClick={onClick}
+      className={`inline-flex items-center justify-center rounded-lg border p-2 transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
+        active
+          ? "border-purple-400/60 bg-purple-500/30 text-purple-200"
+          : "border-white/10 bg-white/5 text-blue-100/60 hover:bg-white/10 hover:text-white"
+      }`}
+    >
+      {children}
+    </button>
   );
 }

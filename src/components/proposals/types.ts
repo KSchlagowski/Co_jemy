@@ -13,3 +13,13 @@ import type { ProposalPayload } from "@/pages/api/proposals";
 export type ProposalsResponse =
   | { ok: true; proposals: ProposalPayload[]; recorded: boolean; degraded: boolean }
   | { ok: false; reason: string };
+
+/**
+ * Client-side view of the `/api/ratings` envelope, same single-declaration discipline:
+ * the verdict union is the endpoint's own type, erased at compile time.
+ */
+export type { RatingVerdict } from "@/pages/api/ratings";
+
+import type { RatingVerdict } from "@/pages/api/ratings";
+
+export type RatingResponse = { ok: true; verdict: RatingVerdict } | { ok: false; reason: string };

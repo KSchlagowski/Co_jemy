@@ -234,22 +234,22 @@ Forward-only migration; no existing data affected. Prod apply is human-run (`npx
 
 #### Automated
 
-- [x] 2.1 `npm test` green (new ratings suite + existing tests)
-- [x] 2.2 `npm run lint` passes
-- [x] 2.3 `npm run build` passes
+- [x] 2.1 `npm test` green (new ratings suite + existing tests) — e6dda46
+- [x] 2.2 `npm run lint` passes — e6dda46
+- [x] 2.3 `npm run build` passes — e6dda46
 
 ### Phase 3: Rating UI on Proposal Cards
 
 #### Automated
 
-- [ ] 3.1 `npm test` green
-- [ ] 3.2 `npm run lint` passes
-- [ ] 3.3 `npm run build` passes
+- [x] 3.1 `npm test` green
+- [x] 3.2 `npm run lint` passes
+- [x] 3.3 `npm run build` passes
 
 #### Manual
 
-- [ ] 3.4 Tap 👍 → disabled in-flight → selected on 200; tap 👎 flips
-- [ ] 3.5 Persistence across sign-out/sign-in confirmed via Studio row
-- [ ] 3.6 Second-account isolation confirmed
-- [ ] 3.7 Re-rating a reappearing recipe succeeds (idempotent upsert)
+- [x] 3.4 Tap 👍 → disabled in-flight → selected on 200; tap 👎 flips
+- [x] 3.5 Persistence across sign-out/sign-in confirmed via Studio row
+- [x] 3.6 Second-account isolation confirmed
+- [x] 3.7 Re-rating a reappearing recipe succeeds (idempotent upsert)
 - [ ] 3.8 Production smoke after deploy
