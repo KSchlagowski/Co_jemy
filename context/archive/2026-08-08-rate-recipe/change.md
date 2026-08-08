@@ -1,10 +1,10 @@
 ---
 change_id: rate-recipe
 title: Rate a proposed recipe with persistent 👍/👎
-status: implemented
+status: archived
 created: 2026-08-08
 updated: 2026-08-08
-archived_at: null
+archived_at: 2026-08-08T12:26:41Z
 ---
 
 ## Notes
