@@ -1,6 +1,19 @@
 import { defineConfig, devices } from "@playwright/test";
 
 /**
+ * Load local secrets from .env (SUPABASE_URL/KEY for the dev server to validate
+ * sessions, E2E_USERNAME/PASSWORD for the sign-in in e2e/auth.setup.ts). Loading
+ * here means both this process AND the spawned `npm run dev` child (which
+ * inherits the env) see them. See .env.example. No-op in CI, where the values
+ * come from the environment / secrets and no .env file exists.
+ */
+try {
+  process.loadEnvFile();
+} catch {
+  // .env is optional — ignore when absent.
+}
+
+/**
  * Astro dev server runs on 4321. Override the target with PLAYWRIGHT_BASE_URL
  * (e.g. to point at a preview deployment) without touching this file.
  */

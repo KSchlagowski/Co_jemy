@@ -17,8 +17,10 @@ setup("authenticate", async ({ page }) => {
   }
 
   await page.goto("/auth/signin");
-  await page.getByLabel("Email").fill(email);
-  await page.getByLabel("Password").fill(password);
+  // exact: true — the sign-in form has a "Show password" toggle whose aria-label
+  // also contains "password", so a substring getByLabel("Password") is ambiguous.
+  await page.getByLabel("Email", { exact: true }).fill(email);
+  await page.getByLabel("Password", { exact: true }).fill(password);
   await page.getByRole("button", { name: "Sign in" }).click();
 
   // A successful sign-in redirects to the dashboard (see src/pages/api/auth/signin.ts).
