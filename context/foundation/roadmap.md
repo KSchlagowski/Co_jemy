@@ -3,7 +3,7 @@ project: "Co jemy?"
 version: 1
 status: draft
 created: 2026-07-14
-updated: 2026-07-19
+updated: 2026-08-08
 prd_version: 1
 main_goal: learn
 top_blocker: skills
@@ -32,7 +32,7 @@ Meal-decision fatigue wastes time and food: the user is willing to cook but ment
 | ID   | Change ID                   | Outcome (user can …)                                              | Prerequisites | PRD refs                              | Status   |
 | ---- | --------------------------- | ----------------------------------------------------------------- | ------------- | ------------------------------------- | -------- |
 | F-01 | spoonacular-retrieval-spike | (foundation) Spoonacular retrieval, quota, and terms verified in deployed Worker | —             | FR-003, FR-010, FR-011                 | done     |
-| S-01 | production-auth-loop        | register, confirm email, and sign in on the production URL        | —             | FR-001, FR-002                         | ready    |
+| S-01 | production-auth-loop        | register, confirm email, and sign in on the production URL        | —             | FR-001, FR-002                         | done     |
 | S-02 | cold-start-proposals        | request proposals and get 4 diverse real recipes with links       | F-01          | US-02, FR-003, FR-008, FR-010, FR-011, NFR (dead-link, mobile) | proposed |
 | S-03 | rate-recipe                 | rate a proposed recipe 👍/👎; rating persists across sessions      | S-02          | FR-004                                 | proposed |
 | S-04 | manage-rated-recipes        | view rated recipes, change a rating, delete a rating              | S-03          | FR-005, FR-006, FR-007                 | proposed |
@@ -92,7 +92,7 @@ Foundations below assume these are present and do NOT re-scaffold them.
 - **Blockers:** —
 - **Unknowns:** —
 - **Risk:** low-risk closure work, but until it lands no real user can complete registration in production — every later slice's live verification depends on working accounts.
-- **Status:** ready
+- **Status:** done
 
 ### S-02: Cold-start proposals from the Spoonacular API *(north star)*
 
@@ -176,3 +176,4 @@ Foundations below assume these are present and do NOT re-scaffold them.
 (Empty on first generation. `/10x-archive` appends an entry here — and flips that item's `Status` to `done` — when a change whose `Change ID` matches the item is archived.)
 
 - **F-01: (foundation) a fetch-based Spoonacular `complexSearch` call is verified working in the deployed Worker and returns recipe candidates (title, description, `sourceUrl`, image); the point cost of one full proposal set is measured against the free plan's daily quota; and the provider's attribution and storage obligations are written down as concrete schema and UI constraints.** — Archived 2026-07-19 → `context/archive/2026-07-16-spoonacular-retrieval-spike/`. Lesson: —.
+- **S-01: register, confirm email, and sign in on the production URL** — Archived 2026-08-08 → `context/archive/2026-07-19-production-auth-loop/`. Lesson: —.

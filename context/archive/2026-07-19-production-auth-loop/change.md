@@ -1,10 +1,10 @@
 ---
 change_id: production-auth-loop
 title: Close the production auth loop end-to-end
-status: implementing
+status: archived
 created: 2026-07-19
-updated: 2026-07-20
-archived_at: null
+updated: 2026-08-08
+archived_at: 2026-08-08T10:01:51Z
 ---
 
 ## Notes
