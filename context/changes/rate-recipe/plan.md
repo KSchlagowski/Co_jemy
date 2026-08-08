@@ -242,14 +242,14 @@ Forward-only migration; no existing data affected. Prod apply is human-run (`npx
 
 #### Automated
 
-- [x] 3.1 `npm test` green
-- [x] 3.2 `npm run lint` passes
-- [x] 3.3 `npm run build` passes
+- [x] 3.1 `npm test` green — 55dafa1
+- [x] 3.2 `npm run lint` passes — 55dafa1
+- [x] 3.3 `npm run build` passes — 55dafa1
 
 #### Manual
 
-- [x] 3.4 Tap 👍 → disabled in-flight → selected on 200; tap 👎 flips
-- [x] 3.5 Persistence across sign-out/sign-in confirmed via Studio row
-- [x] 3.6 Second-account isolation confirmed
-- [x] 3.7 Re-rating a reappearing recipe succeeds (idempotent upsert)
-- [ ] 3.8 Production smoke after deploy
+- [x] 3.4 Tap 👍 → disabled in-flight → selected on 200; tap 👎 flips — 55dafa1
+- [x] 3.5 Persistence across sign-out/sign-in confirmed via Studio row — 55dafa1
+- [x] 3.6 Second-account isolation confirmed — 55dafa1
+- [x] 3.7 Re-rating a reappearing recipe succeeds (idempotent upsert) — 55dafa1
+- [x] 3.8 Production smoke after deploy
