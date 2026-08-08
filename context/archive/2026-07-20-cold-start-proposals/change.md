@@ -1,10 +1,10 @@
 ---
 change_id: cold-start-proposals
 title: Cold-start proposals from the Spoonacular API
-status: impl_reviewed
+status: archived
 created: 2026-07-20
 updated: 2026-08-08
-archived_at: null
+archived_at: 2026-08-08T12:31:31Z
 ---
 
 ## Notes
