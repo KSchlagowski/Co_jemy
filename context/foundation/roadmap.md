@@ -3,7 +3,7 @@ project: "Co jemy?"
 version: 1
 status: draft
 created: 2026-07-14
-updated: 2026-08-08
+updated: 2026-08-09
 prd_version: 1
 main_goal: learn
 top_blocker: skills
@@ -36,7 +36,7 @@ Meal-decision fatigue wastes time and food: the user is willing to cook but ment
 | S-02 | cold-start-proposals        | request proposals and get 4 diverse real recipes with links       | F-01          | US-02, FR-003, FR-008, FR-010, FR-011, NFR (dead-link, mobile) | done |
 | S-03 | rate-recipe                 | rate a proposed recipe 👍/👎; rating persists across sessions      | S-02          | FR-004                                 | done     |
 | S-04 | manage-rated-recipes        | view rated recipes, change a rating, delete a rating              | S-03          | FR-005, FR-006, FR-007                 | proposed |
-| S-05 | personalized-proposal-slots | get proposals observably shaped by rating history (4-slot logic)  | S-02, S-03    | US-01, FR-008, FR-009                  | proposed |
+| S-05 | personalized-proposal-slots | get proposals observably shaped by rating history (4-slot logic)  | S-02, S-03    | US-01, FR-008, FR-009                  | done |
 
 ## Streams
 
@@ -143,7 +143,7 @@ Foundations below assume these are present and do NOT re-scaffold them.
   - What rating-history threshold activates each slot's logic (PRD says "sufficient rating history" without a number)? — Owner: user. Block: no (a default can ship and be tuned).
 - **Risk:** this is the product's core hypothesis — that proposals shaped by rating history beat generic search; it lands last in the stream because it needs proposals (S-02) and ratings (S-03) to exist, and its slot rules must stay CPU-light on the Workers free tier.
 - **Pivot note (2026-07-18):** the Spoonacular move makes this slice *easier*, not harder. FR-009's permanent 👎-exclusion and slot 2's "not proposed in ≥2 weeks" both become trivially reliable against a stable integer recipe id — under AI search, candidates had no stable identity, so exclusion would have been fuzzy title-matching. Slot 3's "inferred taste profile" likewise turns from a free-text prompt into structured `cuisine` / `diet` / `dishType` filters, which is both cheaper to compute and easier to explain. The constraint to respect: the profile must be inferred from cuisines the app *requested and recorded*, not from the response's `cuisines[]` array, which is a derived field and often empty.
-- **Status:** proposed
+- **Status:** done
 
 ## Backlog Handoff
 
@@ -179,3 +179,4 @@ Foundations below assume these are present and do NOT re-scaffold them.
 - **S-01: register, confirm email, and sign in on the production URL** — Archived 2026-08-08 → `context/archive/2026-07-19-production-auth-loop/`. Lesson: —.
 - **S-03: user can rate any proposed recipe 👍 or 👎, and the rating reliably persists across sessions (the PRD guardrail: losing rating history destroys the core value loop).** — Archived 2026-08-08 → `context/archive/2026-08-08-rate-recipe/`. Lesson: —.
 - **S-02: a logged-in user with no ratings can request proposals and see 4 real recipes from at least 2 different cuisines, each with a title, brief description, and working external link; a dead link is signaled instead of failing silently; proposed recipes are recorded so they can be rated later.** — Archived 2026-08-08 → `context/archive/2026-07-20-cold-start-proposals/`. Lesson: —.
+- **S-05: a user with rating history gets proposals observably shaped by it — slot 1: recently liked; slot 2: liked but not proposed in ≥2 weeks; slot 3: new recipe matching the inferred taste profile; slot 4: random discovery — with 👎-rated recipes permanently excluded and slot logic activating progressively as ratings accumulate.** — Archived 2026-08-09 → `context/archive/2026-08-08-personalized-proposal-slots/`. Lesson: —.

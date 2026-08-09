@@ -1,10 +1,10 @@
 ---
 change_id: personalized-proposal-slots
 title: Personalized 4-slot proposals (S-05)
-status: impl_reviewed
+status: archived
 created: 2026-08-08
 updated: 2026-08-09
-archived_at: null
+archived_at: 2026-08-09T12:42:16Z
 ---
 
 ## Notes
