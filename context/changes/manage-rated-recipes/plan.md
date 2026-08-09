@@ -311,28 +311,28 @@ The ratings page costs **zero Spoonacular points** — one indexed DB query (`ra
 
 #### Automated
 
-- [x] 2.1 `npm run lint` passes
-- [x] 2.2 `npm run test` passes (new DELETE + history tests green)
-- [x] 2.3 `npm run build` passes
+- [x] 2.1 `npm run lint` passes — 1e5f495
+- [x] 2.2 `npm run test` passes (new DELETE + history tests green) — 1e5f495
+- [x] 2.3 `npm run build` passes — 1e5f495
 
 #### Manual
 
-- [x] 2.4 DELETE returns `deleted: true` then idempotent `deleted: false`; row gone from DB
+- [x] 2.4 DELETE returns `deleted: true` then idempotent `deleted: false`; row gone from DB — 1e5f495
 
 ### Phase 3: UI — Ratings Page + Island
 
 #### Automated
 
-- [ ] 3.1 `npm run lint` passes (react-compiler rule green)
-- [ ] 3.2 `npm run test` passes
-- [ ] 3.3 `npm run build` passes
+- [x] 3.1 `npm run lint` passes (react-compiler rule green)
+- [x] 3.2 `npm run test` passes
+- [x] 3.3 `npm run build` passes
 
 #### Manual
 
-- [ ] 3.4 List renders correctly (order, verdicts, image fallback)
-- [ ] 3.5 Flip persists non-optimistically and survives reload
-- [ ] 3.6 Two-step delete works; blur resets; deletion survives reload
-- [ ] 3.7 Deleted recipe proposable again (FR-009 reset)
-- [ ] 3.8 Empty state non-error tone (fresh user + last-row delete)
-- [ ] 3.9 Nav both ways; signed-out redirect on `/dashboard/ratings`
-- [ ] 3.10 Mobile-width rendering pass
+- [x] 3.4 List renders correctly (order, verdicts, image fallback)
+- [x] 3.5 Flip persists non-optimistically and survives reload
+- [x] 3.6 Two-step delete works; blur resets; deletion survives reload
+- [x] 3.7 Deleted recipe proposable again (FR-009 reset)
+- [x] 3.8 Empty state non-error tone (fresh user + last-row delete)
+- [x] 3.9 Nav both ways; signed-out redirect on `/dashboard/ratings`
+- [x] 3.10 Mobile-width rendering pass

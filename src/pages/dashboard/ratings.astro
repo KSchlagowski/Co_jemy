@@ -1,0 +1,47 @@
+---
+import Layout from "@/layouts/Layout.astro";
+import RatedRecipesList from "@/components/ratings/RatedRecipesList";
+import { createClient } from "@/lib/supabase";
+import { getRatedRecipes, type RatedRecipe } from "@/lib/history";
+
+// Middleware already gates /dashboard/* — `user` is guaranteed here.
+const { user } = Astro.locals;
+
+// A failed read must not 500 the whole page: the island renders an inline error
+// (ProposalError posture) and the shell stays navigable.
+let ratings: RatedRecipe[] = [];
+let loadFailed = false;
+const supabase = createClient(Astro.request.headers, Astro.cookies);
+if (supabase && user) {
+  try {
+    ratings = await getRatedRecipes(supabase, user.id);
+  } catch {
+    loadFailed = true;
+  }
+} else {
+  loadFailed = true;
+}
+---
+
+<Layout title="Rated recipes">
+  <div class="bg-cosmic flex min-h-screen items-center justify-center p-4">
+    <div
+      class="w-full max-w-4xl rounded-2xl border border-white/10 bg-white/10 p-6 text-center text-white backdrop-blur-xl sm:p-8"
+    >
+      <a
+        href="/dashboard"
+        class="mb-4 inline-block text-sm font-medium text-purple-300 transition-colors hover:text-purple-200"
+      >
+        ← Dashboard
+      </a>
+      <h1 class="mb-4 bg-gradient-to-r from-blue-200 to-purple-200 bg-clip-text text-3xl font-bold text-transparent">
+        Rated recipes
+      </h1>
+      <p class="mb-6 text-sm text-blue-100/60">
+        Everything you've rated, newest first. Flip a verdict, or delete a rating to make the recipe proposable again.
+      </p>
+
+      <RatedRecipesList client:load initialRatings={ratings} loadFailed={loadFailed} />
+    </div>
+  </div>
+</Layout>

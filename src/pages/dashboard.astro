@@ -21,6 +21,13 @@ const { user } = Astro.locals;
         <ProposalList client:load />
       </div>
 
+      <a
+        href="/dashboard/ratings"
+        class="mt-6 inline-block text-sm font-medium text-purple-300 transition-colors hover:text-purple-200"
+      >
+        Rated recipes →
+      </a>
+
       <form method="POST" action="/api/auth/signout" class="mt-8">
         <button
           type="submit"
