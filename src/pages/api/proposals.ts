@@ -43,12 +43,15 @@ export interface ProposalPayload {
   slot: 1 | 2 | 3 | 4;
   /** The stored verdict for pre-selecting the card's 👍 — a 👎 never ships in a set. */
   ratingVerdict: "like" | null;
+  /** False on backfilled/inactive slots — the client only badges a slot filled as designed. */
+  asDesigned: boolean;
 }
 
 function toPayload(
   recipe: ProposedRecipe,
   slot: ProposalPayload["slot"],
   ratingVerdict: ProposalPayload["ratingVerdict"],
+  asDesigned: boolean,
 ): ProposalPayload {
   return {
     id: recipe.id,
@@ -61,6 +64,7 @@ function toPayload(
     requestedCuisine: recipe.requestedCuisine,
     slot,
     ratingVerdict,
+    asDesigned,
   };
 }
 
@@ -97,12 +101,12 @@ export const POST: APIRoute = async (context) => {
       return json({ ok: false, reason: "service_unavailable" }, 503);
     }
 
-    const cutoffISO = new Date(Date.now() - SLOT2_STALE_DAYS * 24 * 60 * 60 * 1000).toISOString();
+    const cutoff = new Date(Date.now() - SLOT2_STALE_DAYS * 24 * 60 * 60 * 1000);
     const [recentLikes, staleLikes, dislikedIds, topCuisine] = await Promise.all([
-      getRecentLikes(supabase),
-      getStaleLikes(supabase, cutoffISO),
-      getDislikedIds(supabase),
-      getTopCuisine(supabase),
+      getRecentLikes(supabase, user.id),
+      getStaleLikes(supabase, user.id, cutoff),
+      getDislikedIds(supabase, user.id),
+      getTopCuisine(supabase, user.id),
     ]);
 
     const mode: ProposalMode = recentLikes.length > 0 ? "personalized" : "cold_start";
@@ -121,7 +125,7 @@ export const POST: APIRoute = async (context) => {
       const likedIds = new Set(recentLikes.map((l) => l.spoonacularId));
       proposals = result.proposals;
       degraded = result.degraded;
-      payloads = result.proposals.map((p) => toPayload(p, p.slot, likedIds.has(p.id) ? "like" : null));
+      payloads = result.proposals.map((p) => toPayload(p, p.slot, likedIds.has(p.id) ? "like" : null, p.asDesigned));
     } else {
       const result = await buildColdStartSet(dislikedIds);
       if (!result.ok) {
@@ -130,7 +134,8 @@ export const POST: APIRoute = async (context) => {
       proposals = result.proposals;
       degraded = result.degraded;
       // Cold-start slots are positional: the set caps at 4, so index + 1 stays in the union.
-      payloads = result.proposals.map((p, i) => toPayload(p, (i + 1) as ProposalPayload["slot"], null));
+      // Positional slots have no provenance to badge, so asDesigned is uniformly false.
+      payloads = result.proposals.map((p, i) => toPayload(p, (i + 1) as ProposalPayload["slot"], null, false));
     }
 
     // Persist before responding, but never fail the set on a write error: the quota point is
@@ -141,10 +146,14 @@ export const POST: APIRoute = async (context) => {
     const recorded = await persist(supabase, user.id, proposals);
 
     return json({ ok: true, mode, proposals: payloads, recorded, degraded }, 200);
-  } catch {
+  } catch (error) {
     // The envelope is the convention later endpoints inherit, so nothing escapes untyped.
-    // Swallowed rather than rethrown: an unexpected throw is the one path that could carry
-    // the key-bearing provider URL into Workers observability.
+    // Logged before mapping — a silent 500 is undiagnosable in Workers observability — with
+    // the apiKey query param redacted: an unexpected throw is the one path that could carry
+    // the key-bearing provider URL.
+    const message = error instanceof Error ? error.message : String(error);
+    // eslint-disable-next-line no-console -- the only trace a production 500 leaves.
+    console.error("proposals: unhandled failure —", message.replace(/apiKey=[^&\s"']+/gi, "apiKey=REDACTED"));
     return json({ ok: false, reason: "internal_error" }, 500);
   }
 };
@@ -164,6 +173,8 @@ async function persist(
     { onConflict: "spoonacular_id", ignoreDuplicates: true },
   );
   if (recipesError) {
+    // eslint-disable-next-line no-console -- recorded:false is silent by design; this is its only trace.
+    console.error("proposals persist: recipes upsert failed", recipesError.code, recipesError.message);
     return false;
   }
 
@@ -175,5 +186,10 @@ async function persist(
       requested_type: null,
     })),
   );
-  return !proposalsError;
+  if (proposalsError) {
+    // eslint-disable-next-line no-console -- recorded:false is silent by design; this is its only trace.
+    console.error("proposals persist: rows insert failed", proposalsError.code, proposalsError.message);
+    return false;
+  }
+  return true;
 }

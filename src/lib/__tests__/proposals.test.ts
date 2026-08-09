@@ -211,6 +211,8 @@ describe("buildPersonalizedSet — steady-state budget", () => {
 
       expect(result.proposals).toHaveLength(4);
       expect(result.proposals.map((p) => p.slot)).toEqual([1, 2, 3, 4]);
+      // Full-strength history: every slot fills by its own rule, so every badge is earned.
+      expect(result.proposals.every((p) => p.asDesigned)).toBe(true);
     }
   });
 
@@ -250,6 +252,9 @@ describe("buildPersonalizedSet — slot activation thresholds", () => {
     expect(slot1.requestedCuisine).toBeNull();
     expect(result.proposals).toHaveLength(4);
     expect(result.degraded).toBe(false);
+    // Slot 1 earned its badge; slot 2 backfilled and slot 3 pinned a random cuisine
+    // (inactive profile), so neither may claim provenance; slot 4 filled by its own rule.
+    expect(result.proposals.map((p) => p.asDesigned)).toEqual([true, false, false, true]);
   });
 
   it("a stale like activates slot 2", async () => {
@@ -325,6 +330,7 @@ describe("buildPersonalizedSet — backfill, dedupe, degraded", () => {
     const slot1 = result.proposals.find((p) => p.slot === 1);
     // Pool-filled, not the failed re-fetch — and no compensating extra provider call.
     expect(slot1?.id).toBeGreaterThanOrEqual(POOL_A_BASE);
+    expect(slot1?.asDesigned).toBe(false);
     expect(search).toHaveBeenCalledTimes(EXPECTED_CALLS);
     expect(byId).toHaveBeenCalledTimes(1);
   });

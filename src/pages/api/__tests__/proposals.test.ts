@@ -60,8 +60,13 @@ function proposed(id: number, requestedCuisine: string | null): ProposedRecipe {
   };
 }
 
-function slotted(id: number, slot: SlottedRecipe["slot"], requestedCuisine: string | null): SlottedRecipe {
-  return { ...proposed(id, requestedCuisine), slot };
+function slotted(
+  id: number,
+  slot: SlottedRecipe["slot"],
+  requestedCuisine: string | null,
+  asDesigned = true,
+): SlottedRecipe {
+  return { ...proposed(id, requestedCuisine), slot, asDesigned };
 }
 
 function like(id: number): RecentLike {
@@ -97,13 +102,17 @@ function mockClient() {
 }
 
 // A full personalized set: slots 1/2 by-id re-fetches of liked recipes (no pinned cuisine),
-// slots 3/4 from the two searches.
+// slots 3/4 from the two searches. Slot 4 is marked backfilled so the payload's asDesigned
+// passthrough is covered alongside the three designed fills.
 function fullSet(): SlottedRecipe[] {
-  return [slotted(42, 1, null), slotted(5, 2, null), slotted(300, 3, "thai"), slotted(400, 4, "french")];
+  return [slotted(42, 1, null), slotted(5, 2, null), slotted(300, 3, "thai"), slotted(400, 4, "french", false)];
 }
 
 beforeEach(() => {
   vi.clearAllMocks();
+  // The endpoint now leaves console.error traces on failure paths (impl-review F2);
+  // silenced here so deliberate-failure tests don't pollute the runner output.
+  vi.spyOn(console, "error").mockImplementation(() => undefined);
   setHistory();
   coldStart.mockResolvedValue({ ok: true, proposals: [], degraded: false });
   personalized.mockResolvedValue({ ok: true, proposals: [], degraded: false });
@@ -160,6 +169,8 @@ describe("POST /api/proposals — mode routing", () => {
     expect(body.mode).toBe("cold_start");
     expect(body.proposals.map((p) => p.slot)).toEqual([1, 2, 3]);
     expect(body.proposals.every((p) => p.ratingVerdict === null)).toBe(true);
+    // Positional slots carry no provenance — the client must never badge a cold-start card.
+    expect(body.proposals.every((p) => p.asDesigned === false)).toBe(true);
   });
 
   it("≥1 like → personalized path, fed exactly the four history reads", async () => {
@@ -195,7 +206,10 @@ describe("POST /api/proposals — mode routing", () => {
     await POST(makeContext());
 
     expect(staleLikes).toHaveBeenCalledTimes(1);
-    const cutoff = Date.parse(staleLikes.mock.calls[0][1]);
+    // Reads carry the session user explicitly (defense-in-depth beside RLS), and the
+    // cutoff travels as a Date — the ISO encoding happens inside the history module.
+    expect(staleLikes.mock.calls[0][1]).toBe(USER_ID);
+    const cutoff = staleLikes.mock.calls[0][2].getTime();
     expect(cutoff).toBeGreaterThanOrEqual(before - STALE_CUTOFF_MS);
     expect(cutoff).toBeLessThanOrEqual(Date.now() - STALE_CUTOFF_MS);
   });
@@ -229,13 +243,21 @@ describe("POST /api/proposals — payload hydration", () => {
     const res = await POST(makeContext());
 
     const body = (await res.json()) as {
-      proposals: { id: number; slot: number; ratingVerdict: string | null; requestedCuisine: string | null }[];
+      proposals: {
+        id: number;
+        slot: number;
+        ratingVerdict: string | null;
+        requestedCuisine: string | null;
+        asDesigned: boolean;
+      }[];
     };
     expect(body.proposals.map((p) => p.slot)).toEqual([1, 2, 3, 4]);
     expect(body.proposals[0]).toMatchObject({ id: 42, ratingVerdict: "like", requestedCuisine: null });
     expect(body.proposals[1]).toMatchObject({ id: 5, ratingVerdict: "like", requestedCuisine: null });
     expect(body.proposals[2]).toMatchObject({ id: 300, ratingVerdict: null, requestedCuisine: "thai" });
     expect(body.proposals[3]).toMatchObject({ id: 400, ratingVerdict: null, requestedCuisine: "french" });
+    // The engine's provenance flag reaches the wire untouched — the backfilled slot 4 stays false.
+    expect(body.proposals.map((p) => p.asDesigned)).toEqual([true, true, true, false]);
   });
 });
 
@@ -257,6 +279,23 @@ describe("POST /api/proposals — persistence rows", () => {
     expect(rows.every((row) => row.user_id === USER_ID)).toBe(true);
     expect(rows.map((row) => row.spoonacular_id)).toEqual([42, 5, 300, 400]);
     expect(rows.map((row) => row.requested_cuisine)).toEqual([null, null, "thai", "french"]);
+  });
+
+  it("tolerates a persist failure: 200 with recorded:false, the set still served", async () => {
+    // Pins the stated design decision: the quota point is already spent, so a write
+    // error must never fail the set — a regression to 500 here would ship silently.
+    const { upsert } = mockClient();
+    upsert.mockResolvedValue({ error: { code: "XX000", message: "boom" } });
+    setHistory({ likes: [like(42), like(5)], stales: [stale(5)], cuisine: "thai" });
+    personalized.mockResolvedValue({ ok: true, proposals: fullSet(), degraded: false });
+
+    const res = await POST(makeContext());
+
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { ok: boolean; recorded: boolean; proposals: unknown[] };
+    expect(body.ok).toBe(true);
+    expect(body.recorded).toBe(false);
+    expect(body.proposals).toHaveLength(4);
   });
 });
 

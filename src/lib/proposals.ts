@@ -24,6 +24,12 @@ export type ProposalSetResult =
 /** 1 = recently liked · 2 = liked, not proposed in ≥2 weeks · 3 = taste match · 4 = discovery. */
 export interface SlottedRecipe extends ProposedRecipe {
   slot: 1 | 2 | 3 | 4;
+  /**
+   * True only when the slot was filled by its own rule — false for backfill and for an
+   * inactive slot 3 (random cuisine, not the taste profile). Badges key off this: a
+   * backfilled card must not claim a provenance it doesn't have.
+   */
+  asDesigned: boolean;
 }
 
 export type PersonalizedSetResult =
@@ -442,6 +448,10 @@ export async function buildPersonalizedSet(history: PersonalizedHistory): Promis
   // Slot 4 is discovery — random by definition, so falling back is never degradation.
   filled[3] = takeFrom(poolB);
 
+  // A slot filled before backfill wears its own rule's provenance — except an inactive
+  // slot 3, whose search pinned a random cuisine, not the taste profile.
+  const asDesigned = [filled[0] !== null, filled[1] !== null, filled[2] !== null && slot3Active, filled[3] !== null];
+
   // Backfill: any unfilled slot (failed by-id, inactive slot, exhausted rule) takes the
   // next unused pool candidate; pool exhausted → the slot stays empty ("up to 4").
   const backfillPool = [...poolA, ...poolB];
@@ -452,7 +462,7 @@ export async function buildPersonalizedSet(history: PersonalizedHistory): Promis
   const proposals: SlottedRecipe[] = [];
   filled.forEach((recipe, index) => {
     if (recipe !== null) {
-      proposals.push({ ...recipe, slot: (index + 1) as SlottedRecipe["slot"] });
+      proposals.push({ ...recipe, slot: (index + 1) as SlottedRecipe["slot"], asDesigned: asDesigned[index] });
     }
   });
 

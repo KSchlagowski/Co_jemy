@@ -337,3 +337,16 @@ Forward-only migration; `requested_cuisine DROP NOT NULL` is backward-compatible
 - [x] 4.5 Slot badges correct on personalized vs cold-start sets — ba2bef7
 - [x] 4.6 Mobile layout intact — ba2bef7
 - [x] 4.7 Full US-01 loop verified on production (~5.40 pts/set via quota headers) — ba2bef7
+
+## Addendum — implementation review (2026-08-09)
+
+Recorded by `/10x-impl-review` (report: `reviews/impl-review.md`) so future reviews don't re-litigate:
+
+**Deviations accepted as shipped (review F4/F5):**
+- The envelope's `mode` field landed in `src/components/proposals/types.ts`'s hand-defined `ProposalsResponse` — the plan's "extend types at the endpoint only" was unachievable for an envelope field; single-declaration discipline preserved via the `ProposalMode` re-export.
+- Unplanned but coherent: the ProposalList header copy switches on a loaded personalized set; `h-full` on the card article (layout consequence of the badge wrapper).
+- Commit 81716b4 also carried a user-requested `.claude/skills/10x-implement/SKILL.md` policy edit (commit-message approval gate removed) — process change, not app scope.
+
+**Review-driven contract extensions (triage fixes, post-ba2bef7):**
+- `SlottedRecipe`/`ProposalPayload` gained `asDesigned: boolean`; badges render only on `personalized && asDesigned` (F1 — backfilled/inactive slots no longer wear provenance they lack). Cold-start payloads carry `asDesigned: false`.
+- History reads take `(client, userId, …)` with explicit `.eq("user_id")` defense-in-depth, and `getStaleLikes` takes a `Date` (F7); failure paths leave sanitized `console.error` traces (F2); persist failure is pinned by test (F9); RecipeCard `rate()` has an in-flight ref guard (F8).

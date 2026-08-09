@@ -8,7 +8,8 @@ import type { Proposal, ProposalMode, ProposalsResponse } from "@/components/pro
 type Status = "idle" | "loading" | "loaded" | "error";
 
 // Why this card is in the set (FR-008). Only meaningful on a personalized set — cold-start
-// slots are positional, so the badges stay off until the envelope says `personalized`.
+// slots are positional, so the badges stay off until the envelope says `personalized` — and
+// only on slots filled as designed: a backfilled card must not claim a provenance it lacks.
 const SLOT_LABEL: Record<Proposal["slot"], string> = {
   1: "Recently liked",
   2: "Worth revisiting",
@@ -109,7 +110,7 @@ export default function ProposalList() {
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
             {proposals.map((proposal) => (
               <div key={proposal.id} className="relative">
-                {personalized && (
+                {personalized && proposal.asDesigned && (
                   <span className="absolute top-3 left-3 z-10 rounded-full border border-white/20 bg-black/60 px-2.5 py-1 text-xs font-medium text-white backdrop-blur-sm">
                     {SLOT_LABEL[proposal.slot]}
                   </span>

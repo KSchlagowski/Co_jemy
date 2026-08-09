@@ -13,6 +13,11 @@
 -- Slots 1/2 re-fetch recipes by id and pin no cuisine, so by-id proposal events
 -- must be able to record honestly. S-02 writes always provide the value, so all
 -- existing rows keep it; only the new by-id path inserts NULL.
+--
+-- Rollback precondition: re-adding NOT NULL fails once NULL-cuisine rows exist —
+-- backfill or delete them first. And never revert this migration alone while the
+-- S-05 endpoint stays deployed: persist() would then fail on every personalized
+-- set (permanent recorded:false, rotting slot 2's max(proposed_at) semantics).
 alter table public.proposals alter column requested_cuisine drop not null;
 
 -- Slot 2's read: per liked recipe, when was it last proposed? proposals is

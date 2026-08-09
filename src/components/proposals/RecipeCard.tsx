@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { UtensilsCrossed, ExternalLink, ThumbsUp, ThumbsDown, CircleAlert } from "lucide-react";
 import type { Proposal, RatingResponse, RatingVerdict } from "@/components/proposals/types";
 
@@ -46,8 +46,16 @@ export function RecipeCard({ proposal, initialVerdict }: RecipeCardProps) {
   const [verdict, setVerdict] = useState<RatingVerdict | null>(initialVerdict);
   const [ratingPending, setRatingPending] = useState(false);
   const [ratingError, setRatingError] = useState<string | null>(null);
+  // `disabled` only lands after the re-render — the same gap ProposalList's fetch guard
+  // covers. Without it a fast second tap fires a concurrent POST and the last-settled
+  // response wins, which is not necessarily the last-sent intent.
+  const ratingInFlight = useRef(false);
 
   async function rate(next: RatingVerdict) {
+    if (ratingInFlight.current) {
+      return;
+    }
+    ratingInFlight.current = true;
     setRatingPending(true);
     setRatingError(null);
     try {
@@ -65,6 +73,7 @@ export function RecipeCard({ proposal, initialVerdict }: RecipeCardProps) {
     } catch {
       setRatingError(RATING_RETRY_MESSAGE);
     } finally {
+      ratingInFlight.current = false;
       setRatingPending(false);
     }
   }
