@@ -6,7 +6,12 @@
 >
 > Refresh: re-run `/10x-test-plan --refresh` when stale (see §8).
 >
-> Last updated: 2026-07-22 (§3 Phase 1 → implementing; risk #1 unit suite landed; §6.1 cookbook filled)
+> Last updated: 2026-08-09 (§3 Phase 1 → `testing-storage-diversity-units` opened for risks #4/#5; risk #1 slice shipped)
+>
+> Known staleness (candidates for `--refresh`, not yet reconciled): §4 lists
+> Playwright as "none yet", but `@playwright/test` + `e2e/auth-*.spec.ts` and
+> unit tests for `history`/`ratings` landed via feature slices outside this
+> rollout. Phase 3's dependency (roadmap S-03/S-05) is now satisfied.
 
 ## 1. Strategy
 
@@ -76,7 +81,7 @@ orchestrator updates Status as artifacts appear on disk.
 
 | # | Phase name | Goal (one line) | Risks covered | Test types | Status | Change folder |
 |---|------------|-----------------|---------------|------------|--------|---------------|
-| 1 | Harness + proposal-engine units | Bootstrap the runner; defend the quota budget, storage-field discipline, and request-side diversity at the cheapest layer | #1, #4, #5 | unit | implementing (risk #1 landed; #4/#5 pending own research) | context/changes/testing-harness-proposal-units/ |
+| 1 | Harness + proposal-engine units | Bootstrap the runner; defend the quota budget, storage-field discipline, and request-side diversity at the cheapest layer | #1, #4, #5 | unit | implementing (risk #1 shipped; #4/#5 change opened) | context/changes/testing-harness-proposal-units/ (#1, shipped) · context/changes/testing-storage-diversity-units/ (#4, #5) |
 | 2 | Proposal API + card-render integration | Prove the endpoint envelope leaks no extra provider call and the card sanitizes/falls back correctly | #1, #6 | integration + component | not started | — |
 | 3 | Rating-loop persistence & isolation | Lock the persistence guardrail, 👎-exclusion, per-user isolation, and the shared-catalogue write guard (lands with S-03/S-05) | #2, #3, #7 | integration | not started | — |
 | 4 | E2e critical flow + gates wiring | One end-to-end run of login → propose → rate → re-propose (👎'd recipe absent) and enforce the test gates in CI | #2, #3 | e2e + gates | not started | — |
