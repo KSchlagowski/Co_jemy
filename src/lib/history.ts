@@ -109,6 +109,59 @@ export async function getDislikedIds(client: SessionClient, userId: string): Pro
   return data.map((row) => row.spoonacular_id as number);
 }
 
+export interface RatedRecipe {
+  spoonacularId: number;
+  verdict: "like" | "dislike";
+  ratedAt: string;
+  title: string;
+  image: string | null;
+}
+
+/**
+ * The FR-005 management list: every rating with its stored recipe fields,
+ * newest first. One embedded select across the ratings→recipes FK — the DB
+ * legally holds only id/title/image (FR-011), and all of it comes back in a
+ * single query at zero Spoonacular cost.
+ *
+ * `.limit(100)` is a display bound, not a correctness rule: PostgREST would
+ * silently cap the response at its `max-rows` setting (1000) anyway, so an
+ * explicit limit beats pretending the read is unbounded (lessons.md lesson 4).
+ * MVP cardinality sits far below it.
+ */
+export async function getRatedRecipes(client: SessionClient, userId: string): Promise<RatedRecipe[]> {
+  const { data, error } = await client
+    .from("ratings")
+    .select("spoonacular_id, verdict, rated_at, recipes(title, image)")
+    .eq("user_id", userId)
+    .order("rated_at", { ascending: false })
+    .limit(100);
+  if (error) {
+    // eslint-disable-next-line no-console -- the only trace this failure leaves in Workers observability.
+    console.error("history read failed: rated recipes", error.code, error.message);
+    throw new Error("history read failed: rated recipes");
+  }
+  const rated: RatedRecipe[] = [];
+  for (const row of data) {
+    // A recipes row exists for every rating (proposals upserts it before the rating FK
+    // can succeed), so a null embed is theoretically impossible — skip defensively
+    // rather than crash the page on one corrupt row.
+    const recipe = row.recipes as unknown as { title: string; image: string | null } | null;
+    if (!recipe) {
+      // eslint-disable-next-line no-console -- the only trace this failure leaves in Workers observability.
+      console.error("rated recipes: rating without recipes embed", row.spoonacular_id);
+      continue;
+    }
+    rated.push({
+      spoonacularId: row.spoonacular_id as number,
+      verdict: row.verdict as "like" | "dislike",
+      ratedAt: row.rated_at as string,
+      title: recipe.title,
+      image: recipe.image ?? null,
+    });
+  }
+  return rated;
+}
+
 /**
  * The user's top affinity cuisine, or null with no cuisine signal. Ties break
  * by most recent proposal event (the decided tie-break rule).

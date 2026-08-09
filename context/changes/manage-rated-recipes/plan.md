@@ -297,27 +297,27 @@ The ratings page costs **zero Spoonacular points** — one indexed DB query (`ra
 
 #### Automated
 
-- [x] 1.1 `npm run lint` passes
-- [x] 1.2 `npm run test` passes (updated proposals persist tests green)
-- [x] 1.3 `npm run build` passes (env schema accepted)
+- [x] 1.1 `npm run lint` passes — dbe6c63
+- [x] 1.2 `npm run test` passes (updated proposals persist tests green) — dbe6c63
+- [x] 1.3 `npm run build` passes (env schema accepted) — dbe6c63
 
 #### Manual
 
-- [x] 1.4 Human deploy sequence completed in order: secret → code deploy → `db push`
-- [x] 1.5 Proposals return `recorded: true`; rating a fresh proposal card still succeeds
-- [x] 1.6 Anon-key `recipes` insert rejected
+- [x] 1.4 Human deploy sequence completed in order: secret → code deploy → `db push` — dbe6c63
+- [x] 1.5 Proposals return `recorded: true`; rating a fresh proposal card still succeeds — dbe6c63
+- [x] 1.6 Anon-key `recipes` insert rejected — dbe6c63
 
 ### Phase 2: API + Data Read
 
 #### Automated
 
-- [ ] 2.1 `npm run lint` passes
-- [ ] 2.2 `npm run test` passes (new DELETE + history tests green)
-- [ ] 2.3 `npm run build` passes
+- [x] 2.1 `npm run lint` passes
+- [x] 2.2 `npm run test` passes (new DELETE + history tests green)
+- [x] 2.3 `npm run build` passes
 
 #### Manual
 
-- [ ] 2.4 DELETE returns `deleted: true` then idempotent `deleted: false`; row gone from DB
+- [x] 2.4 DELETE returns `deleted: true` then idempotent `deleted: false`; row gone from DB
 
 ### Phase 3: UI — Ratings Page + Island
 

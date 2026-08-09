@@ -6,18 +6,22 @@ import type { APIContext } from "astro";
 // both intercepts it reliably and keeps the `astro:env/server` import out of the test graph.
 vi.mock("@/lib/supabase", () => ({ createClient: vi.fn() }));
 
-import { POST } from "@/pages/api/ratings";
+import { POST, DELETE } from "@/pages/api/ratings";
 import { createClient } from "@/lib/supabase";
 
 const createClientMock = vi.mocked(createClient);
 
 const USER_ID = "11111111-2222-3333-4444-555555555555";
 
-function makeContext(body: BodyInit | null, user: { id: string } | null = { id: USER_ID }): APIContext {
+function makeContext(
+  body: BodyInit | null,
+  user: { id: string } | null = { id: USER_ID },
+  method: "POST" | "DELETE" = "POST",
+): APIContext {
   return {
     locals: user ? { user } : {},
     request: new Request("http://test/api/ratings", {
-      method: "POST",
+      method,
       body,
       headers: { "Content-Type": "application/json" },
     }),
@@ -132,6 +136,101 @@ describe("POST /api/ratings — write failures are loud", () => {
     mockClient({ error: { code: "42501", message: "permission denied for table ratings" } });
 
     const res = await POST(makeContext(payload()));
+
+    expect(res.status).toBe(500);
+    const body = (await res.json()) as Record<string, unknown>;
+    expect(body).toEqual({ ok: false, reason: "write_failed" });
+    expect(JSON.stringify(body)).not.toContain("permission denied");
+  });
+});
+
+// Hand-built mock for the delete chain: `.delete().eq().eq().select(...)` resolving to a
+// controllable `{ data, error }` (Supabase returns `data: null` alongside an error).
+function mockDeleteClient(result: { data: unknown[] | null; error: { code?: string; message?: string } | null }) {
+  const select = vi.fn().mockResolvedValue(result);
+  const eqSpoonacularId = vi.fn(() => ({ select }));
+  const eqUserId = vi.fn(() => ({ eq: eqSpoonacularId }));
+  const deleteFn = vi.fn(() => ({ eq: eqUserId }));
+  const from = vi.fn(() => ({ delete: deleteFn }));
+  createClientMock.mockReturnValue({ from } as unknown as ReturnType<typeof createClient>);
+  return { deleteFn, eqUserId, eqSpoonacularId, select, from };
+}
+
+function deletePayload(overrides: Record<string, unknown> = {}): string {
+  return JSON.stringify({ spoonacularId: 715538, ...overrides });
+}
+
+describe("DELETE /api/ratings — auth gate", () => {
+  it("returns 401 for an unauthenticated request without constructing a Supabase client", async () => {
+    const res = await DELETE(makeContext(deletePayload(), null, "DELETE"));
+
+    expect(res.status).toBe(401);
+    expect(await res.json()).toEqual({ ok: false, reason: "unauthenticated" });
+    expect(createClientMock).not.toHaveBeenCalled();
+  });
+});
+
+describe("DELETE /api/ratings — payload validation", () => {
+  it.each([
+    ["non-JSON body", "not json {"],
+    ["missing spoonacularId", JSON.stringify({})],
+    ["non-integer id", deletePayload({ spoonacularId: 7.5 })],
+    ["string id", deletePayload({ spoonacularId: "715538" })],
+    ["non-positive id", deletePayload({ spoonacularId: 0 })],
+    ["null body", JSON.stringify(null)],
+  ])("returns 400 invalid_payload for %s and never touches the DB", async (_label, body) => {
+    const { deleteFn } = mockDeleteClient({ data: [], error: null });
+
+    const res = await DELETE(makeContext(body, { id: USER_ID }, "DELETE"));
+
+    expect(res.status).toBe(400);
+    expect(await res.json()).toEqual({ ok: false, reason: "invalid_payload" });
+    expect(deleteFn).not.toHaveBeenCalled();
+  });
+});
+
+describe("DELETE /api/ratings — delete contract", () => {
+  it("returns 503 service_unavailable when Supabase is unconfigured", async () => {
+    createClientMock.mockReturnValue(null);
+
+    const res = await DELETE(makeContext(deletePayload(), { id: USER_ID }, "DELETE"));
+
+    expect(res.status).toBe(503);
+    expect(await res.json()).toEqual({ ok: false, reason: "service_unavailable" });
+  });
+
+  it("deletes by session user_id + spoonacular_id and reports deleted: true when a row went", async () => {
+    const { deleteFn, eqUserId, eqSpoonacularId, select, from } = mockDeleteClient({
+      data: [{ spoonacular_id: 715538 }],
+      error: null,
+    });
+
+    // The body tries to smuggle its own user_id; the filter must carry the session's instead.
+    const res = await DELETE(makeContext(deletePayload({ user_id: "attacker-id" }), { id: USER_ID }, "DELETE"));
+
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ ok: true, deleted: true });
+    expect(from).toHaveBeenCalledWith("ratings");
+    expect(deleteFn).toHaveBeenCalledTimes(1);
+    expect(eqUserId).toHaveBeenCalledWith("user_id", USER_ID);
+    expect(eqSpoonacularId).toHaveBeenCalledWith("spoonacular_id", 715538);
+    // `.select()` is what observes the affected count — Supabase reports no error on zero rows.
+    expect(select).toHaveBeenCalledWith("spoonacular_id");
+  });
+
+  it("returns an idempotent 200 with deleted: false when no row matched", async () => {
+    mockDeleteClient({ data: [], error: null });
+
+    const res = await DELETE(makeContext(deletePayload(), { id: USER_ID }, "DELETE"));
+
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ ok: true, deleted: false });
+  });
+
+  it("maps a DB error to 500 write_failed without leaking the Supabase message", async () => {
+    mockDeleteClient({ data: null, error: { code: "42501", message: "permission denied for table ratings" } });
+
+    const res = await DELETE(makeContext(deletePayload(), { id: USER_ID }, "DELETE"));
 
     expect(res.status).toBe(500);
     const body = (await res.json()) as Record<string, unknown>;
