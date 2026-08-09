@@ -292,22 +292,22 @@ Forward-only migration; `requested_cuisine DROP NOT NULL` is backward-compatible
 
 #### Automated
 
-- [x] 1.1 Migration applies cleanly (`npx supabase db push` / local reset)
-- [x] 1.2 Lint passes: `npm run lint`
-- [x] 1.3 Build passes: `npm run build`
+- [x] 1.1 Migration applies cleanly (`npx supabase db push` / local reset) — 81716b4
+- [x] 1.2 Lint passes: `npm run lint` — 81716b4
+- [x] 1.3 Build passes: `npm run build` — 81716b4
 
 #### Manual
 
-- [x] 1.4 Two-account security_invoker RLS check on both views
-- [x] 1.5 Existing propose/rate flow unchanged on production
+- [x] 1.4 Two-account security_invoker RLS check on both views — 81716b4
+- [x] 1.5 Existing propose/rate flow unchanged on production — 81716b4
 
 ### Phase 2: Slot Assembly Engine
 
 #### Automated
 
-- [ ] 2.1 Unit tests pass: `npm test`
-- [ ] 2.2 Lint passes: `npm run lint`
-- [ ] 2.3 Build passes: `npm run build`
+- [x] 2.1 Unit tests pass: `npm test`
+- [x] 2.2 Lint passes: `npm run lint`
+- [x] 2.3 Build passes: `npm run build`
 
 ### Phase 3: Endpoint Wiring + Payload Extension
 

@@ -27,7 +27,8 @@ export interface ProposalPayload {
   sourceName: string | null;
   sourceUrl: string | null;
   spoonacularSourceUrl: string | null;
-  requestedCuisine: string;
+  /** Null on by-id re-fetch slots (1/2), which pin no cuisine. */
+  requestedCuisine: string | null;
 }
 
 function toPayload(recipe: ProposedRecipe): ProposalPayload {

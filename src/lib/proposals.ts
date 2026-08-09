@@ -1,13 +1,17 @@
-import { searchRecipes, type RecipeCandidate, type SpoonacularResult } from "@/lib/spoonacular";
+import { getRecipeById, searchRecipes, type RecipeCandidate, type SpoonacularResult } from "@/lib/spoonacular";
+import type { RecentLike, StaleLike } from "@/lib/history";
 
 /** The six cuisines the F-01 spike verified return full results. */
 export const CUISINES = Object.freeze(["italian", "mexican", "chinese", "greek", "thai", "french"] as const);
 
 export type Cuisine = (typeof CUISINES)[number];
 
-/** A candidate carrying the cuisine the app *asked for* — never the response's derived `cuisines[]`. */
+/**
+ * A candidate carrying the cuisine the app *asked for* — never the response's derived
+ * `cuisines[]`. Null on by-id re-fetches (slots 1/2), which pin no cuisine.
+ */
 export interface ProposedRecipe extends RecipeCandidate {
-  requestedCuisine: string;
+  requestedCuisine: string | null;
   excerpt: string | null;
 }
 
@@ -16,6 +20,33 @@ type FailureReason = Extract<SpoonacularResult, { ok: false }>["reason"];
 export type ProposalSetResult =
   | { ok: true; proposals: ProposedRecipe[]; degraded: boolean }
   | { ok: false; reason: FailureReason; status: number };
+
+/** 1 = recently liked · 2 = liked, not proposed in ≥2 weeks · 3 = taste match · 4 = discovery. */
+export interface SlottedRecipe extends ProposedRecipe {
+  slot: 1 | 2 | 3 | 4;
+}
+
+export type PersonalizedSetResult =
+  | { ok: true; proposals: SlottedRecipe[]; degraded: boolean }
+  | { ok: false; reason: FailureReason; status: number };
+
+/** History shapes read by `@/lib/history` — the engine itself never touches the DB. */
+export interface PersonalizedHistory {
+  recentLikes: RecentLike[];
+  staleLikes: StaleLike[];
+  dislikedIds: number[];
+  topCuisine: string | null;
+}
+
+// Slot-activation thresholds: tunable defaults decided in the S-05 plan, exported so the
+// endpoint and future tuning share one declaration. Tests assert behavior from PRD/research
+// values, never these constants (mirror-test discipline).
+/** Slot 1 activates at the first like. */
+export const SLOT1_MIN_LIKES = 1;
+/** Slot 2 wants a like not proposed in ≥ this many days (PRD "≥2 weeks"); the endpoint derives the cutoff. */
+export const SLOT2_STALE_DAYS = 14;
+/** Slot 3's profile needs this many likes plus a non-empty cuisine affinity (PRD Socrates hint). */
+export const SLOT3_MIN_LIKES = 5;
 
 /** Two calls is both the floor and the ceiling — call count dominates quota cost. */
 const PER_CALL = 20;
@@ -214,7 +245,7 @@ function randomOffset(): number {
   return Math.floor(Math.random() * (MAX_OFFSET + 1));
 }
 
-function toProposed(recipes: RecipeCandidate[], requestedCuisine: string): ProposedRecipe[] {
+function toProposed(recipes: RecipeCandidate[], requestedCuisine: string | null): ProposedRecipe[] {
   return recipes.map((recipe) => ({
     ...recipe,
     requestedCuisine,
@@ -243,14 +274,26 @@ function interleave(a: ProposedRecipe[], b: ProposedRecipe[]): ProposedRecipe[] 
   return merged;
 }
 
+type ProviderFailure = Extract<SpoonacularResult, { ok: false }>;
+
+// quota_exhausted wins over transport reasons: it is the one failure with a distinct,
+// actionable status (402), and burying it under a retryable 502 tells the user to retry
+// against a budget that is already spent.
+function preferFailure(failures: ProviderFailure[]): ProviderFailure {
+  return failures.find((f) => f.reason === "quota_exhausted") ?? failures[0];
+}
+
 /**
  * Exactly two cuisine-pinned calls composed into one ordered set of up to 4.
  *
  * Returns whatever survives validation and dedup — 0 to 4 — rather than padding or
  * failing: the PRD specifies "up to 4". One failed call degrades to a single-cuisine
  * set, which beats an error screen; only a double failure is an error.
+ *
+ * `excludeIds` is the FR-009 exclusion set (👎-rated recipes) — a user with only
+ * dislikes still routes here, so cold start must honor the exclusion too.
  */
-export async function buildColdStartSet(): Promise<ProposalSetResult> {
+export async function buildColdStartSet(excludeIds: number[] = []): Promise<ProposalSetResult> {
   const [cuisineA, cuisineB] = pickCuisinePair();
 
   // Concurrent: the calls are independent and the latency is user-facing.
@@ -260,11 +303,23 @@ export async function buildColdStartSet(): Promise<ProposalSetResult> {
   ]);
 
   if (!resultA.ok && !resultB.ok) {
-    return { ok: false, reason: resultA.reason, status: resultA.status };
+    const failure = preferFailure([resultA, resultB]);
+    return { ok: false, reason: failure.reason, status: failure.status };
   }
 
-  const groupA = resultA.ok ? toProposed(resultA.recipes, cuisineA) : [];
-  const groupB = resultB.ok ? toProposed(resultB.recipes, cuisineB) : [];
+  const exclude = new Set(excludeIds);
+  const groupA = resultA.ok
+    ? toProposed(
+        resultA.recipes.filter((r) => !exclude.has(r.id)),
+        cuisineA,
+      )
+    : [];
+  const groupB = resultB.ok
+    ? toProposed(
+        resultB.recipes.filter((r) => !exclude.has(r.id)),
+        cuisineB,
+      )
+    : [];
 
   const proposals = interleave(groupA, groupB).slice(0, SET_SIZE);
 
@@ -274,4 +329,142 @@ export async function buildColdStartSet(): Promise<ProposalSetResult> {
   const cuisinesCovered = new Set(proposals.map((p) => p.requestedCuisine)).size;
 
   return { ok: true, proposals, degraded: cuisinesCovered < 2 };
+}
+
+// The single-object by-id result reshaped like a pool candidate; null on any failure so
+// the caller can fall back to the pool uniformly.
+function fromById(result: SpoonacularResult | null): ProposedRecipe | null {
+  if (result === null || !result.ok || result.recipes.length === 0) {
+    return null;
+  }
+  const [recipe] = toProposed(result.recipes, null);
+  return recipe;
+}
+
+/**
+ * The steady-state 4-slot set (FR-008): slot 1 = most recent like re-fetched by id,
+ * slot 2 = oldest stale like distinct from slot 1, slot 3 = first pool candidate from
+ * the affinity-cuisine search, slot 4 = first candidate from a different-cuisine search.
+ *
+ * Call shape is fixed at exactly 2 `complexSearch` + ≤2 by-id, all concurrent —
+ * 2 × 1.70 + 2 × 1.00 = 5.40 pts/set ≈ 9 sets/day on the free plan. Adding calls is
+ * what costs quota; the two searches' over-fetch is the buffer that absorbs exclusion,
+ * dedupe, and backfill.
+ *
+ * Rated recipes never enter the pool: dislikes are FR-009-absolute, and likes must not
+ * pose as "new" in slots 3/4 (they reach the set only via their own by-id slot).
+ *
+ * `degraded` is true only when an *active* slot 1–3 could not be filled as designed
+ * (failed by-id, failed search, pool exhausted after exclusion). An inactive slot
+ * backfilling from the pool is expected early-stage behavior, not degradation — a
+ * 1-like user with healthy calls sees no warning.
+ */
+export async function buildPersonalizedSet(history: PersonalizedHistory): Promise<PersonalizedSetResult> {
+  const { recentLikes, staleLikes, dislikedIds, topCuisine } = history;
+
+  const slot1Id = recentLikes.length >= SLOT1_MIN_LIKES ? recentLikes[0].spoonacularId : null;
+  // staleLikes arrives oldest-first (NULLs first), so the first id distinct from slot 1 is the pick.
+  const slot2Id = staleLikes.find((s) => s.spoonacularId !== slot1Id)?.spoonacularId ?? null;
+  const slot3Active = recentLikes.length >= SLOT3_MIN_LIKES && topCuisine !== null;
+
+  // pickCuisinePair guarantees the two randoms differ, so slot 4's cuisine differs from
+  // slot 3's in every branch: pinned-affinity (swap if collided) or both-random.
+  const [randomA, randomB] = pickCuisinePair();
+  const slot3Cuisine = slot3Active ? topCuisine : randomA;
+  const slot4Cuisine = slot3Cuisine === randomB ? randomA : randomB;
+
+  // Concurrent fan-out: latency ≈ one provider round trip. Inactive by-id slots cost nothing.
+  const [byId1, byId2, searchA, searchB] = await Promise.all([
+    slot1Id === null ? null : getRecipeById(slot1Id),
+    slot2Id === null ? null : getRecipeById(slot2Id),
+    searchRecipes({ cuisine: slot3Cuisine, number: PER_CALL, sort: "random", offset: randomOffset() }),
+    searchRecipes({ cuisine: slot4Cuisine, number: PER_CALL, sort: "random", offset: randomOffset() }),
+  ]);
+
+  const ratedIds = new Set<number>(dislikedIds);
+  for (const like of recentLikes) {
+    ratedIds.add(like.spoonacularId);
+  }
+  for (const stale of staleLikes) {
+    ratedIds.add(stale.spoonacularId);
+  }
+
+  const poolA = searchA.ok
+    ? toProposed(
+        searchA.recipes.filter((r) => !ratedIds.has(r.id)),
+        slot3Cuisine,
+      )
+    : [];
+  const poolB = searchB.ok
+    ? toProposed(
+        searchB.recipes.filter((r) => !ratedIds.has(r.id)),
+        slot4Cuisine,
+      )
+    : [];
+
+  const used = new Set<number>();
+  const filled: (ProposedRecipe | null)[] = [null, null, null, null];
+  let degraded = false;
+
+  const takeFrom = (pool: ProposedRecipe[]): ProposedRecipe | null => {
+    const candidate = pool.find((p) => !used.has(p.id));
+    if (candidate) {
+      used.add(candidate.id);
+    }
+    return candidate ?? null;
+  };
+
+  // Designed fills first. Slots 1/2: own by-id result; a failure flags degraded and leaves
+  // the slot for backfill. Slots 3/4: first unused candidate from their own search's pool.
+  if (slot1Id !== null) {
+    const recipe = fromById(byId1);
+    if (recipe !== null && !used.has(recipe.id)) {
+      filled[0] = recipe;
+      used.add(recipe.id);
+    } else {
+      degraded = true;
+    }
+  }
+  if (slot2Id !== null) {
+    const recipe = fromById(byId2);
+    if (recipe !== null && !used.has(recipe.id)) {
+      filled[1] = recipe;
+      used.add(recipe.id);
+    } else {
+      degraded = true;
+    }
+  }
+
+  filled[2] = takeFrom(poolA);
+  if (filled[2] === null && slot3Active) {
+    degraded = true;
+  }
+  // Slot 4 is discovery — random by definition, so falling back is never degradation.
+  filled[3] = takeFrom(poolB);
+
+  // Backfill: any unfilled slot (failed by-id, inactive slot, exhausted rule) takes the
+  // next unused pool candidate; pool exhausted → the slot stays empty ("up to 4").
+  const backfillPool = [...poolA, ...poolB];
+  for (let i = 0; i < filled.length; i++) {
+    filled[i] ??= takeFrom(backfillPool);
+  }
+
+  const proposals: SlottedRecipe[] = [];
+  filled.forEach((recipe, index) => {
+    if (recipe !== null) {
+      proposals.push({ ...recipe, slot: (index + 1) as SlottedRecipe["slot"] });
+    }
+  });
+
+  // Whole-set failure only when nothing is buildable *and* a call actually failed;
+  // two healthy searches that legitimately return nothing stay an ok-but-empty set.
+  if (proposals.length === 0) {
+    const failures = [byId1, byId2, searchA, searchB].filter((r): r is ProviderFailure => r !== null && !r.ok);
+    if (failures.length > 0) {
+      const failure = preferFailure(failures);
+      return { ok: false, reason: failure.reason, status: failure.status };
+    }
+  }
+
+  return { ok: true, proposals, degraded };
 }
