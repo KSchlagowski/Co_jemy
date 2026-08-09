@@ -29,3 +29,10 @@
 - **Problem**: Supabase's PostgREST caps every response at its `max-rows` setting (default 1000) and reports no error when it does. A query written with no `.limit()` reads as "returns everything" but silently loses rows past the cap. Here the truncated set is an exclusion list, so past ~1000 ratings per user FR-009 — the PRD's one absolute rule — degrades invisibly; manual testing can never catch it because MVP cardinality sits far below the cap.
 - **Rule**: Never treat a no-limit PostgREST select as complete. When a read feeds a correctness rule (exclusion, dedupe, budget), either page it, bound it with an explicit `.limit()` sized to the rule, or fetch with `count: 'exact'` and fail loudly when the count exceeds the returned rows. Code comments must state the cap rather than claim unboundedness.
 - **Applies to**: all reads in `src/lib/history.ts`; any future PostgREST read whose completeness a product rule depends on.
+
+## Never close a compliance slice guarded only by a test
+
+- **Context**: Any phase touching the Spoonacular persist path in `src/pages/api/proposals.ts`, where FR-011 caps stored recipe fields at id, title, image.
+- **Problem**: A key-set test catches the breach only until someone edits the test. The violation is a contract breach with the provider, not a broken feature, so it ships silently.
+- **Rule**: Never close a slice whose only protection for an external contract is a test assertion. The narrowing type at the boundary ships before the slice is marked complete; when a mutation check forces it into a separate commit, the follow-on must be a named step in `## Progress`, not a line in §What We're NOT Doing.
+- **Applies to**: plan, plan-review, implement, impl-review — the `recipes` upsert in `src/pages/api/proposals.ts`; any future write site enforcing FR-011.
