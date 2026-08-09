@@ -1,10 +1,10 @@
 ---
 change_id: spoonacular-retrieval-spike
 title: Spoonacular retrieval spike
-status: impl_reviewed
+status: archived
 created: 2026-07-19
-updated: 2026-07-19
-archived_at: null
+updated: 2026-08-09
+archived_at: 2026-08-09T17:46:57Z
 ---
 
 ## Notes
