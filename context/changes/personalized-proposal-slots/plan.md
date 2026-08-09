@@ -305,23 +305,23 @@ Forward-only migration; `requested_cuisine DROP NOT NULL` is backward-compatible
 
 #### Automated
 
-- [x] 2.1 Unit tests pass: `npm test`
-- [x] 2.2 Lint passes: `npm run lint`
-- [x] 2.3 Build passes: `npm run build`
+- [x] 2.1 Unit tests pass: `npm test` — 8c77222
+- [x] 2.2 Lint passes: `npm run lint` — 8c77222
+- [x] 2.3 Build passes: `npm run build` — 8c77222
 
 ### Phase 3: Endpoint Wiring + Payload Extension
 
 #### Automated
 
-- [ ] 3.1 Unit tests pass: `npm test`
-- [ ] 3.2 Lint passes: `npm run lint`
-- [ ] 3.3 Build passes: `npm run build`
+- [x] 3.1 Unit tests pass: `npm test`
+- [x] 3.2 Lint passes: `npm run lint`
+- [x] 3.3 Build passes: `npm run build`
 
 #### Manual
 
-- [ ] 3.4 Personalized set on production with `slot` + `ratingVerdict` in payload
-- [ ] 3.5 👎-rated recipe absent across repeated requests
-- [ ] 3.6 4 proposals rows per set, NULL cuisine on by-id slots
+- [x] 3.4 Personalized set on production with `slot` + `ratingVerdict` in payload
+- [x] 3.5 👎-rated recipe absent across repeated requests
+- [x] 3.6 4 proposals rows per set, NULL cuisine on by-id slots
 
 ### Phase 4: UI — Slots + Rating Hydration
 
