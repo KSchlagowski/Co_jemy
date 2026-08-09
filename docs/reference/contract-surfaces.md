@@ -36,13 +36,16 @@ Rating events (user, verdict, timestamp) are the app's own data and live in a ta
 
 ## Quota budget per proposal set (measured 2026-07-19, free plan = 50 points/day)
 
+Shipped shapes (both builders over-fetch at `number=20`, so each search costs 1 + 0.035×20 = 1.70):
+
 | Set shape | Points | Sets/day |
 | --- | --- | --- |
-| Cold-start, 2 cuisines (default per findings.md) | 2.71 | ~18 |
-| Cold-start, 4 cuisines | 5.40 | ~9 |
-| Steady-state 4-slot (2 by-id re-fetches + 2 searches) | ~4.70 | ~10 |
+| Cold-start (2 cuisine searches) | 3.40 | ~14 |
+| Steady-state 4-slot (2 cuisine searches + ≤2 by-id re-fetches) | 5.40 | ~9 |
 
 Cost model confirmed exact: 1 point/call + 0.035/recipe returned. Calls dominate — over-fetch within a call (`number=20+`), never add calls. One `complexSearch` call per pinned cuisine is the floor. HTTP 402 = quota spent; it is a typed, expected outcome.
+
+**The tested budget is the call shape, not the point total**: a personalized set issues exactly 2 `searchRecipes` calls and at most 2 `getRecipeById` calls; cold start issues exactly 2 `searchRecipes` and no by-id call. Unit tests assert those counts (`src/lib/__tests__/proposals.test.ts`), so adding a call breaks a test rather than quietly halving the day's sets.
 
 ## `src/lib/spoonacular.ts` public surface
 

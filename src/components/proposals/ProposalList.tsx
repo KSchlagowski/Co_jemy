@@ -3,13 +3,23 @@ import { Sparkles, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { RecipeCard } from "@/components/proposals/RecipeCard";
 import { ProposalError } from "@/components/proposals/ProposalError";
-import type { Proposal, ProposalsResponse } from "@/components/proposals/types";
+import type { Proposal, ProposalMode, ProposalsResponse } from "@/components/proposals/types";
 
 type Status = "idle" | "loading" | "loaded" | "error";
+
+// Why this card is in the set (FR-008). Only meaningful on a personalized set — cold-start
+// slots are positional, so the badges stay off until the envelope says `personalized`.
+const SLOT_LABEL: Record<Proposal["slot"], string> = {
+  1: "Recently liked",
+  2: "Worth revisiting",
+  3: "Matches your taste",
+  4: "Something new",
+};
 
 export default function ProposalList() {
   const [status, setStatus] = useState<Status>("idle");
   const [proposals, setProposals] = useState<Proposal[]>([]);
+  const [mode, setMode] = useState<ProposalMode>("cold_start");
   const [degraded, setDegraded] = useState(false);
   const [errorReason, setErrorReason] = useState<string | null>(null);
   // Each request that reaches the endpoint spends real quota — a ref guard blocks a second
@@ -40,6 +50,7 @@ export default function ProposalList() {
       }
 
       setProposals(data.proposals);
+      setMode(data.mode);
       setDegraded(data.degraded);
       setStatus("loaded");
     } catch {
@@ -51,12 +62,17 @@ export default function ProposalList() {
   }
 
   const loading = status === "loading";
+  const personalized = mode === "personalized";
 
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col items-center gap-3 text-center">
+        {/* The starter-set line is a lie once a personalized set is on screen — the badges below
+            are the payoff it promises, so the copy has to hand off to them. */}
         <p className="text-sm text-blue-100/60">
-          Rate a few and your proposals start learning your taste. For now, here&apos;s a diverse starter set.
+          {status === "loaded" && personalized
+            ? "Shaped by what you've rated so far — keep rating and it keeps sharpening."
+            : "Rate a few and your proposals start learning your taste. For now, here's a diverse starter set."}
         </p>
         <Button
           type="button"
@@ -85,12 +101,21 @@ export default function ProposalList() {
           {degraded && (
             <p className="flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-blue-100/60">
               <Info className="size-4 shrink-0" />
-              Only one cuisine was available this time.
+              {personalized
+                ? "Some proposals couldn't be personalized this time."
+                : "Only one cuisine was available this time."}
             </p>
           )}
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
             {proposals.map((proposal) => (
-              <RecipeCard key={proposal.id} proposal={proposal} />
+              <div key={proposal.id} className="relative">
+                {personalized && (
+                  <span className="absolute top-3 left-3 z-10 rounded-full border border-white/20 bg-black/60 px-2.5 py-1 text-xs font-medium text-white backdrop-blur-sm">
+                    {SLOT_LABEL[proposal.slot]}
+                  </span>
+                )}
+                <RecipeCard proposal={proposal} initialVerdict={proposal.ratingVerdict} />
+              </div>
             ))}
           </div>
         </div>

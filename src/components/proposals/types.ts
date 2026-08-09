@@ -8,10 +8,13 @@
  */
 export type { ProposalPayload as Proposal } from "@/pages/api/proposals";
 
-import type { ProposalPayload } from "@/pages/api/proposals";
+/** Which builder assembled the set — slot badges and degraded copy both key off it. */
+export type { ProposalMode } from "@/pages/api/proposals";
+
+import type { ProposalMode, ProposalPayload } from "@/pages/api/proposals";
 
 export type ProposalsResponse =
-  | { ok: true; proposals: ProposalPayload[]; recorded: boolean; degraded: boolean }
+  | { ok: true; mode: ProposalMode; proposals: ProposalPayload[]; recorded: boolean; degraded: boolean }
   | { ok: false; reason: string };
 
 /**

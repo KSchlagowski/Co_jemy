@@ -313,27 +313,27 @@ Forward-only migration; `requested_cuisine DROP NOT NULL` is backward-compatible
 
 #### Automated
 
-- [x] 3.1 Unit tests pass: `npm test`
-- [x] 3.2 Lint passes: `npm run lint`
-- [x] 3.3 Build passes: `npm run build`
+- [x] 3.1 Unit tests pass: `npm test` — 7493d90
+- [x] 3.2 Lint passes: `npm run lint` — 7493d90
+- [x] 3.3 Build passes: `npm run build` — 7493d90
 
 #### Manual
 
-- [x] 3.4 Personalized set on production with `slot` + `ratingVerdict` in payload
-- [x] 3.5 👎-rated recipe absent across repeated requests
-- [x] 3.6 4 proposals rows per set, NULL cuisine on by-id slots
+- [x] 3.4 Personalized set on production with `slot` + `ratingVerdict` in payload — 7493d90
+- [x] 3.5 👎-rated recipe absent across repeated requests — 7493d90
+- [x] 3.6 4 proposals rows per set, NULL cuisine on by-id slots — 7493d90
 
 ### Phase 4: UI — Slots + Rating Hydration
 
 #### Automated
 
-- [ ] 4.1 Unit tests pass: `npm test`
-- [ ] 4.2 Lint passes: `npm run lint`
-- [ ] 4.3 Build passes: `npm run build`
+- [x] 4.1 Unit tests pass: `npm test`
+- [x] 4.2 Lint passes: `npm run lint`
+- [x] 4.3 Build passes: `npm run build`
 
 #### Manual
 
-- [ ] 4.4 Hydrated 👍 on slot-1 card; toggle still round-trips
-- [ ] 4.5 Slot badges correct on personalized vs cold-start sets
-- [ ] 4.6 Mobile layout intact
-- [ ] 4.7 Full US-01 loop verified on production (~5.40 pts/set via quota headers)
+- [x] 4.4 Hydrated 👍 on slot-1 card; toggle still round-trips
+- [x] 4.5 Slot badges correct on personalized vs cold-start sets
+- [x] 4.6 Mobile layout intact
+- [x] 4.7 Full US-01 loop verified on production (~5.40 pts/set via quota headers)

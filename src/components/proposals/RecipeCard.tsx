@@ -4,6 +4,8 @@ import type { Proposal, RatingResponse, RatingVerdict } from "@/components/propo
 
 interface RecipeCardProps {
   proposal: Proposal;
+  /** Stored verdict from the set's payload — pre-selects 👍 on a slot-1/2 re-proposal. */
+  initialVerdict: RatingVerdict | null;
 }
 
 // Reason→copy mapping in the ProposalError.tsx style; unknown reasons fall back to the
@@ -32,13 +34,16 @@ function safeUrl(url: string | null): URL | null {
   return parsed.protocol === "http:" || parsed.protocol === "https:" ? parsed : null;
 }
 
-export function RecipeCard({ proposal }: RecipeCardProps) {
+export function RecipeCard({ proposal, initialVerdict }: RecipeCardProps) {
   const [imageFailed, setImageFailed] = useState(false);
 
-  // No optimistic selection: `verdict` only ever holds a server-confirmed value (the 200 is
-  // what makes "persisted" true — PRD §Guardrails), so the card can't show a rating that
-  // would vanish on the next session.
-  const [verdict, setVerdict] = useState<RatingVerdict | null>(null);
+  // No optimistic selection: `verdict` only ever holds a server-confirmed value — either the
+  // stored verdict the endpoint hydrated onto this slot, or the one a 200 just confirmed (that
+  // 200 is what makes "persisted" true — PRD §Guardrails). The card can never show a rating
+  // that would vanish on the next session. Seeded, not synced: if a card survives into the next
+  // set (same recipe id → same key), its in-session verdict is at least as fresh as the payload,
+  // so there is nothing to reconcile and no effect to write.
+  const [verdict, setVerdict] = useState<RatingVerdict | null>(initialVerdict);
   const [ratingPending, setRatingPending] = useState(false);
   const [ratingError, setRatingError] = useState<string | null>(null);
 
@@ -72,8 +77,10 @@ export function RecipeCard({ proposal }: RecipeCardProps) {
   const credit = proposal.sourceName ?? source?.hostname.replace(/^www\./, "") ?? null;
   const showImage = proposal.image && !imageFailed;
 
+  // `h-full` on the article: the slot badge wraps each card in a relative div, so the grid
+  // stretches that wrapper now — the card has to claim its height to keep rows equal.
   return (
-    <article className="flex flex-col overflow-hidden rounded-xl border border-white/10 bg-white/5 backdrop-blur-xl">
+    <article className="flex h-full flex-col overflow-hidden rounded-xl border border-white/10 bg-white/5 backdrop-blur-xl">
       <div className="relative aspect-[4/3] w-full bg-gradient-to-br from-purple-500/20 to-blue-500/20">
         {showImage ? (
           <img
