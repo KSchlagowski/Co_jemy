@@ -458,6 +458,38 @@ describe("POST /api/proposals — FR-011 storage-field discipline (risk #4)", ()
   });
 });
 
+// Risk #5's DB-side face, on the cold-start branch — the branch US-02 binds and the one no
+// other persistence assertion in this file exercises. The engine owns the diversity guarantee
+// (asserted in lib/__tests__/proposals.test.ts); what the endpoint owes is not to destroy it
+// between the set and the row. This closes the loop to `cuisine_affinity`, which reads the
+// column back to drive slot 3.
+describe("POST /api/proposals — persisted rows carry the engine's cuisine pin (risk #5)", () => {
+  it("writes one row per proposal on a cold-start set, each carrying its own pin", async () => {
+    const { insert } = mockClient();
+    setHistory(); // no likes → the cold-start branch
+    coldStart.mockResolvedValue({
+      ok: true,
+      proposals: [
+        dirtyProposed(1, "italian"),
+        dirtyProposed(2, "french"),
+        dirtyProposed(3, "italian"),
+        dirtyProposed(4, "french"),
+      ],
+      degraded: false,
+    });
+
+    const res = await POST(makeContext());
+
+    expect(res.status).toBe(200);
+    const rows = insert.mock.calls[0][0] as Record<string, unknown>[];
+    // One row per proposal: no dedupe by spoonacular_id, no collapse to a single cuisine.
+    expect(rows).toHaveLength(4);
+    const pinned = rows.map((row) => row.requested_cuisine);
+    expect(pinned).toEqual(["italian", "french", "italian", "french"]);
+    expect(new Set(pinned).size).toBeGreaterThanOrEqual(2);
+  });
+});
+
 describe("POST /api/proposals — failure mapping on the personalized path", () => {
   it("maps quota_exhausted to 402 and never persists", async () => {
     const { insert, upsert } = mockClient();

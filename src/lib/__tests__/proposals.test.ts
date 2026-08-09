@@ -10,7 +10,7 @@ vi.mock("@/lib/spoonacular", async (importOriginal) => {
   return { ...actual, searchRecipes: vi.fn(), getRecipeById: vi.fn() };
 });
 
-import { buildColdStartSet, buildPersonalizedSet, CUISINES, type PersonalizedHistory } from "@/lib/proposals";
+import { buildColdStartSet, buildPersonalizedSet, type PersonalizedHistory } from "@/lib/proposals";
 import { searchRecipes, getRecipeById, type RecipeCandidate, type SpoonacularResult } from "@/lib/spoonacular";
 
 const search = vi.mocked(searchRecipes);
@@ -28,6 +28,20 @@ const EXPECTED_NUMBER = 20;
 const OFFSET_MIN = 0;
 const OFFSET_MAX = 20;
 const ITERATIONS = 30;
+
+// The six cuisines the F-01 spike measured as returning full results
+// (context/archive/2026-07-20-cold-start-proposals/plan.md:162-164; corroborated by
+// spoonacular-retrieval-spike/findings.md:56). Hard-coded for the same reason as the numbers
+// above: `expect(CUISINES).toContain(...)` asserts membership in whatever CUISINES currently
+// *is*, so it stays green against a wholesale swap of the pool to unmeasured cuisines.
+//
+// What this list buys is drift protection, not a zero-results gate: three of the six
+// (`chinese`, `greek`, `thai`) return zero results past offset 50, so membership says nothing
+// about depth. The bound that guards that is MAX_OFFSET = 20, pinned by OFFSET_MAX above.
+const VERIFIED_CUISINES = ["italian", "mexican", "chinese", "greek", "thai", "french"];
+
+// US-02's acceptance criterion: cold-start proposals "span at least 2 different cuisine types".
+const MIN_CUISINES = 2;
 
 function candidate(id: number): RecipeCandidate {
   return {
@@ -49,6 +63,36 @@ function okResult(baseId: number): SpoonacularResult {
     recipes: [candidate(baseId), candidate(baseId + 1), candidate(baseId + 2), candidate(baseId + 3)],
     quota: { used: 3.4, request: 1.7, left: 46.6 },
   };
+}
+
+// ——— Risk #5 fixtures: a response body that actively contradicts the pins ———
+
+// The sentinel must not be a pool member. If it were (say "thai"), a run that legitimately
+// pinned thai would satisfy the "no proposal carries a response-derived cuisine" assertion by
+// coincidence and false-red at roughly 1-in-3 on the runs that didn't.
+const PROVIDER_CUISINE = "provider-derived";
+
+// The inversion of the anti-pattern change.md names: not a fixture whose `cuisines[]` happens
+// to agree, one where it disagrees with everything the app asked for.
+function dirtyCandidate(id: number): RecipeCandidate {
+  // Wider than RecipeCandidate on purpose — assigned to a variable first so the
+  // excess-property check doesn't fire on a literal in the return position.
+  const wide = { ...candidate(id), cuisines: [PROVIDER_CUISINE], dishTypes: ["main course"] };
+  return wide;
+}
+
+function dirtyResult(baseId: number, count = 4): SpoonacularResult {
+  return {
+    ok: true,
+    recipes: Array.from({ length: count }, (_, i) => dirtyCandidate(baseId + i)),
+    quota: { used: 3.4, request: 1.7, left: 46.6 },
+  };
+}
+
+// HTTP 200, no error, no results — a thin cuisine or an offset past its corpus. Distinct from
+// a failed call: the provider reported success and the quota point is still spent.
+function okEmpty(): SpoonacularResult {
+  return { ok: true, recipes: [], quota: { used: 3.4, request: 1.7, left: 46.6 } };
 }
 
 describe("buildColdStartSet — risk #1 two-call invariant", () => {
@@ -84,7 +128,7 @@ describe("buildColdStartSet — risk #1 two-call invariant", () => {
         expect(params.sort).toBe("random");
         expect(params.offset).toBeGreaterThanOrEqual(OFFSET_MIN);
         expect(params.offset).toBeLessThanOrEqual(OFFSET_MAX);
-        expect(CUISINES).toContain(params.cuisine);
+        expect(VERIFIED_CUISINES).toContain(params.cuisine);
       }
 
       // Two *distinct* pinned cuisines (US-02's two-cuisine minimum on the request side).
@@ -202,7 +246,7 @@ describe("buildPersonalizedSet — steady-state budget", () => {
         expect(params.sort).toBe("random");
         expect(params.offset).toBeGreaterThanOrEqual(OFFSET_MIN);
         expect(params.offset).toBeLessThanOrEqual(OFFSET_MAX);
-        expect(CUISINES).toContain(params.cuisine);
+        expect(VERIFIED_CUISINES).toContain(params.cuisine);
       }
 
       // Slot 3 pins the affinity cuisine; slot 4 pins a *different* CUISINES member.
@@ -213,6 +257,27 @@ describe("buildPersonalizedSet — steady-state budget", () => {
       expect(result.proposals.map((p) => p.slot)).toEqual([1, 2, 3, 4]);
       // Full-strength history: every slot fills by its own rule, so every badge is earned.
       expect(result.proposals.every((p) => p.asDesigned)).toBe(true);
+    }
+  });
+
+  // Risk #4, not #5 — but this layer is the only one that can observe it. The endpoint test
+  // module-mocks @/lib/proposals, so `fromById` is invisible there and its fixture supplies the
+  // null itself; all that file can show is that the endpoint doesn't *invent* a cuisine.
+  it("records a NULL cuisine on by-id slots even when the by-id response carries `cuisines[]`", async () => {
+    // The existing "1 like" assertion runs against candidate(), a clean fixture with no
+    // cuisines key — it cannot fail. A by-id response really does carry the array, so this is
+    // the fixture that makes the claim mean something: a provider-derived column would be
+    // populated here, and the app records null because that re-fetch pinned nothing.
+    byId.mockImplementation((id) =>
+      Promise.resolve({ ok: true, recipes: [dirtyCandidate(id)], quota: { used: 1, request: 1, left: 45 } }),
+    );
+
+    const result = expectOk(await buildPersonalizedSet(fullHistory()));
+
+    const byIdSlots = result.proposals.filter((p) => p.slot === 1 || p.slot === 2);
+    expect(byIdSlots).toHaveLength(2);
+    for (const slot of byIdSlots) {
+      expect(slot.requestedCuisine).toBeNull();
     }
   });
 
@@ -398,5 +463,98 @@ describe("buildColdStartSet — FR-009 excludeIds", () => {
     for (const excluded of [1, 2, 101]) {
       expect(ids).not.toContain(excluded);
     }
+  });
+});
+
+// Risk #5. The request side is already sound — two distinct cuisines are pinned by modular
+// construction and the response's `cuisines[]` is structurally unreachable. What that does
+// *not* buy is the delivered-set guarantee US-02 actually binds: two healthy calls, one of
+// which returns 200 with no results, still collapse the four cards to a single cuisine.
+describe("buildColdStartSet — risk #5 delivered-set cuisine diversity", () => {
+  beforeEach(() => {
+    search.mockReset();
+    byId.mockReset();
+    // The counter idiom from the risk-#1 loop: the loop body below calls mockClear(), never
+    // mockReset(), so `call` keeps advancing and the two pinned calls return disjoint id
+    // ranges. A mockReset() inside the loop would reinstall the counter at 0, both calls would
+    // return identical ids, and dedupe would collapse the set to one cuisine — a spurious red.
+    let call = 0;
+    search.mockImplementation(() => {
+      const result = okResult(call * 100 + 1);
+      call += 1;
+      return Promise.resolve(result);
+    });
+  });
+
+  it("delivers a set spanning at least two distinct requested cuisines, undegraded", async () => {
+    for (let i = 0; i < ITERATIONS; i++) {
+      search.mockClear();
+
+      const result = expectOk(await buildColdStartSet());
+
+      // The existing risk-#1 loop asserts two distinct cuisines were *pinned*, which is the
+      // weaker claim. This is the one US-02 binds: two cuisines in the delivered set.
+      const delivered = new Set(result.proposals.map((p) => p.requestedCuisine));
+      expect(delivered.size).toBeGreaterThanOrEqual(MIN_CUISINES);
+      expect(result.degraded).toBe(false);
+    }
+  });
+
+  it("degrades to one cuisine when a healthy call returns zero results, with no make-up call", async () => {
+    // The measured thin-cuisine mode (`chinese`/`greek`/`thai` past offset 20). Only the
+    // failed-call variant is covered above, and the two fail differently: there the provider
+    // reported an error, here it reported success.
+    search.mockReset();
+    byId.mockReset();
+    search.mockResolvedValueOnce(okEmpty()).mockResolvedValueOnce(okResult(1));
+
+    const result = expectOk(await buildColdStartSet());
+
+    expect(result.degraded).toBe(true);
+    expect(new Set(result.proposals.map((p) => p.requestedCuisine)).size).toBe(1);
+    // The risk-#1 no-leak invariant has to survive the #5 degrade path — no retry, no third point.
+    expect(search).toHaveBeenCalledTimes(EXPECTED_CALLS);
+    expect(byId).not.toHaveBeenCalled();
+  });
+
+  it("degrades on an empty set when both calls return zero results", async () => {
+    search.mockReset();
+    byId.mockReset();
+    search.mockResolvedValue(okEmpty());
+
+    const result = expectOk(await buildColdStartSet());
+
+    expect(result.proposals).toEqual([]);
+    // `new Set([]).size` is 0 < 2, so an empty set is degraded by construction. Asserted so a
+    // future "only flag when the set is non-empty" refactor reddens instead of shipping.
+    expect(result.degraded).toBe(true);
+    expect(search).toHaveBeenCalledTimes(EXPECTED_CALLS);
+  });
+
+  it("counts diversity from the pins, not from a contradictory response `cuisines[]`", async () => {
+    // The direct refutation of "the response says N cuisines, so we're fine". Every recipe
+    // here reports the same single sentinel cuisine in its body while the app pinned two.
+    search.mockReset();
+    byId.mockReset();
+    let call = 0;
+    search.mockImplementation(() => {
+      const result = dirtyResult(call * 100 + 1);
+      call += 1;
+      return Promise.resolve(result);
+    });
+
+    const result = expectOk(await buildColdStartSet());
+
+    const delivered = result.proposals.map((p) => p.requestedCuisine);
+    expect(delivered).not.toContain(PROVIDER_CUISINE);
+    // The expectation is read back off the observed call args rather than written as a
+    // constant: an oracle derived from what the app actually requested cannot mirror the
+    // implementation, and no constant is available here that wouldn't.
+    const pinned = search.mock.calls.map(([params]) => params.cuisine ?? null);
+    expect([...new Set(delivered)].sort()).toEqual([...new Set(pinned)].sort());
+    // Two cuisines pinned and both delivered, so the flag stays false. Without this assertion a
+    // `cuisines?.[0] ?? requestedCuisine` fall-through at the degraded computation survives the
+    // test — toProposed spreads the candidate, so the extra key really does reach the proposal.
+    expect(result.degraded).toBe(false);
   });
 });
