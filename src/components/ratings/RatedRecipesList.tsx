@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 import { UtensilsCrossed, ThumbsUp, ThumbsDown, Trash2, CircleAlert } from "lucide-react";
 import { RatingButton } from "@/components/proposals/RatingButton";
+import { safeUrl } from "@/lib/safe-url";
 import type { RatedRecipe, RatingDeleteResponse, RatingResponse, RatingVerdict } from "@/components/ratings/types";
 
 interface RatedRecipesListProps {
@@ -147,7 +148,8 @@ function RatedRecipeCard({ rating, onFlipped, onDeleted }: RatedRecipeCardProps)
     }
   }
 
-  const showImage = rating.image && !imageFailed;
+  const imageSrc = safeUrl(rating.image)?.href ?? null;
+  const showImage = imageSrc && !imageFailed;
 
   return (
     <li className="overflow-hidden rounded-xl border border-white/10 bg-white/5 backdrop-blur-xl">
@@ -155,7 +157,7 @@ function RatedRecipeCard({ rating, onFlipped, onDeleted }: RatedRecipeCardProps)
         <div className="relative aspect-[4/3] w-24 shrink-0 overflow-hidden rounded-lg bg-gradient-to-br from-purple-500/20 to-blue-500/20 sm:w-32">
           {showImage ? (
             <img
-              src={rating.image ?? undefined}
+              src={imageSrc}
               alt={rating.title}
               loading="lazy"
               className="size-full object-cover"
@@ -196,9 +198,16 @@ function RatedRecipeCard({ rating, onFlipped, onDeleted }: RatedRecipeCardProps)
                 type="button"
                 aria-label="Confirm delete rating"
                 disabled={pending}
+                // Arming swaps button elements, which drops focus to `body` — without
+                // autoFocus the blur-to-disarm below could never fire on an outside click.
+
+                autoFocus
                 onClick={() => void deleteRating()}
                 onBlur={() => {
-                  setConfirmingDelete(false);
+                  // Disabling this button mid-delete also fires blur; don't flicker back to idle.
+                  if (!inFlight.current) {
+                    setConfirmingDelete(false);
+                  }
                 }}
                 className="ml-auto inline-flex items-center gap-1.5 rounded-lg border border-red-500/50 bg-red-900/40 px-2.5 py-2 text-xs font-medium text-red-300 transition-colors hover:bg-red-900/60 disabled:cursor-not-allowed disabled:opacity-40"
               >

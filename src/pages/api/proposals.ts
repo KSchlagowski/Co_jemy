@@ -176,7 +176,9 @@ async function persist(
   const admin = createAdminClient();
   if (!admin) {
     // eslint-disable-next-line no-console -- recorded:false is silent by design; this is its only trace.
-    console.error("proposals persist: admin client unavailable (SUPABASE_SERVICE_ROLE_KEY unset)");
+    console.error(
+      "proposals persist: admin client unavailable (SUPABASE_SERVICE_ROLE_KEY unset) — fresh recipes will not land in `recipes`, so rating them FK-404s unknown_recipe until the key is set",
+    );
     return false;
   }
 

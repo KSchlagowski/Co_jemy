@@ -123,10 +123,12 @@ export interface RatedRecipe {
  * legally holds only id/title/image (FR-011), and all of it comes back in a
  * single query at zero Spoonacular cost.
  *
- * `.limit(100)` is a display bound, not a correctness rule: PostgREST would
- * silently cap the response at its `max-rows` setting (1000) anyway, so an
- * explicit limit beats pretending the read is unbounded (lessons.md lesson 4).
- * MVP cardinality sits far below it.
+ * `.limit(100)` is a functional cap, not just display trimming: with no
+ * pagination, ratings past the newest 100 are unreachable from the management
+ * UI (FR-005/006/007) until a pager exists. PostgREST would silently cap the
+ * response at its `max-rows` setting (1000) anyway, so an explicit limit beats
+ * pretending the read is unbounded (lessons.md lesson 4). MVP cardinality sits
+ * far below it.
  */
 export async function getRatedRecipes(client: SessionClient, userId: string): Promise<RatedRecipe[]> {
   const { data, error } = await client

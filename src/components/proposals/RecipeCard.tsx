@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 import { UtensilsCrossed, ExternalLink, ThumbsUp, ThumbsDown, CircleAlert } from "lucide-react";
 import { RatingButton } from "@/components/proposals/RatingButton";
+import { safeUrl } from "@/lib/safe-url";
 import type { Proposal, RatingResponse, RatingVerdict } from "@/components/proposals/types";
 
 interface RecipeCardProps {
@@ -18,22 +19,6 @@ const RATING_MESSAGE_BY_REASON: Record<string, string> = {
   service_unavailable: "Something's misconfigured on our side — this one's on us, not you. Please try again later.",
   write_failed: RATING_RETRY_MESSAGE,
 };
-
-// `sourceUrl` is publisher-supplied data relayed by the provider — the one place in this
-// slice where untrusted remote input becomes an executable-capable attribute. Anything that
-// is not plain http(s) is discarded; the card already renders fine without a link.
-function safeUrl(url: string | null): URL | null {
-  if (!url) {
-    return null;
-  }
-  let parsed: URL;
-  try {
-    parsed = new URL(url);
-  } catch {
-    return null;
-  }
-  return parsed.protocol === "http:" || parsed.protocol === "https:" ? parsed : null;
-}
 
 export function RecipeCard({ proposal, initialVerdict }: RecipeCardProps) {
   const [imageFailed, setImageFailed] = useState(false);
@@ -85,7 +70,8 @@ export function RecipeCard({ proposal, initialVerdict }: RecipeCardProps) {
   const source = safeUrl(proposal.sourceUrl);
   const link = source ?? safeUrl(proposal.spoonacularSourceUrl);
   const credit = proposal.sourceName ?? source?.hostname.replace(/^www\./, "") ?? null;
-  const showImage = proposal.image && !imageFailed;
+  const imageSrc = safeUrl(proposal.image)?.href ?? null;
+  const showImage = imageSrc && !imageFailed;
 
   // `h-full` on the article: the slot badge wraps each card in a relative div, so the grid
   // stretches that wrapper now — the card has to claim its height to keep rows equal.
@@ -94,7 +80,7 @@ export function RecipeCard({ proposal, initialVerdict }: RecipeCardProps) {
       <div className="relative aspect-[4/3] w-full bg-gradient-to-br from-purple-500/20 to-blue-500/20">
         {showImage ? (
           <img
-            src={proposal.image ?? undefined}
+            src={imageSrc}
             alt={proposal.title}
             loading="lazy"
             className="size-full object-cover"
