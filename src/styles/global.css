@@ -1,4 +1,7 @@
-@import "tailwindcss";
+/* source(): limit class scanning to src/ — the default scans the whole repo,
+   turning literal [file:line]-style text in .claude/ and docs markdown into
+   bogus arbitrary-property utilities in the production bundle. */
+@import "tailwindcss" source("..");
 @import "tw-animate-css";
 
 @custom-variant dark (&:is(.dark *));
