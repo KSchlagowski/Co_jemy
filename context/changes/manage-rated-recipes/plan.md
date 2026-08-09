@@ -323,16 +323,16 @@ The ratings page costs **zero Spoonacular points** — one indexed DB query (`ra
 
 #### Automated
 
-- [x] 3.1 `npm run lint` passes (react-compiler rule green)
-- [x] 3.2 `npm run test` passes
-- [x] 3.3 `npm run build` passes
+- [x] 3.1 `npm run lint` passes (react-compiler rule green) — 062eab1
+- [x] 3.2 `npm run test` passes — 062eab1
+- [x] 3.3 `npm run build` passes — 062eab1
 
 #### Manual
 
-- [x] 3.4 List renders correctly (order, verdicts, image fallback)
-- [x] 3.5 Flip persists non-optimistically and survives reload
-- [x] 3.6 Two-step delete works; blur resets; deletion survives reload
-- [x] 3.7 Deleted recipe proposable again (FR-009 reset)
-- [x] 3.8 Empty state non-error tone (fresh user + last-row delete)
-- [x] 3.9 Nav both ways; signed-out redirect on `/dashboard/ratings`
-- [x] 3.10 Mobile-width rendering pass
+- [x] 3.4 List renders correctly (order, verdicts, image fallback) — 062eab1
+- [x] 3.5 Flip persists non-optimistically and survives reload — 062eab1
+- [x] 3.6 Two-step delete works; blur resets; deletion survives reload — 062eab1
+- [x] 3.7 Deleted recipe proposable again (FR-009 reset) — 062eab1
+- [x] 3.8 Empty state non-error tone (fresh user + last-row delete) — 062eab1
+- [x] 3.9 Nav both ways; signed-out redirect on `/dashboard/ratings` — 062eab1
+- [x] 3.10 Mobile-width rendering pass — 062eab1
