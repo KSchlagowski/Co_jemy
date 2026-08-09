@@ -327,13 +327,13 @@ Forward-only migration; `requested_cuisine DROP NOT NULL` is backward-compatible
 
 #### Automated
 
-- [x] 4.1 Unit tests pass: `npm test`
-- [x] 4.2 Lint passes: `npm run lint`
-- [x] 4.3 Build passes: `npm run build`
+- [x] 4.1 Unit tests pass: `npm test` — ba2bef7
+- [x] 4.2 Lint passes: `npm run lint` — ba2bef7
+- [x] 4.3 Build passes: `npm run build` — ba2bef7
 
 #### Manual
 
-- [x] 4.4 Hydrated 👍 on slot-1 card; toggle still round-trips
-- [x] 4.5 Slot badges correct on personalized vs cold-start sets
-- [x] 4.6 Mobile layout intact
-- [x] 4.7 Full US-01 loop verified on production (~5.40 pts/set via quota headers)
+- [x] 4.4 Hydrated 👍 on slot-1 card; toggle still round-trips — ba2bef7
+- [x] 4.5 Slot badges correct on personalized vs cold-start sets — ba2bef7
+- [x] 4.6 Mobile layout intact — ba2bef7
+- [x] 4.7 Full US-01 loop verified on production (~5.40 pts/set via quota headers) — ba2bef7
