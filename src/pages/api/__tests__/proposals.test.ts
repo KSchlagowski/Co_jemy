@@ -6,6 +6,7 @@ import type { APIContext } from "astro";
 // keep `astro:env/server` out of the test graph. `@/lib/proposals` keeps its real exports
 // (the endpoint imports SLOT2_STALE_DAYS); only the two builders become spies.
 vi.mock("@/lib/supabase", () => ({ createClient: vi.fn() }));
+vi.mock("@/lib/supabase-admin", () => ({ createAdminClient: vi.fn() }));
 vi.mock("@/lib/history", () => ({
   getRecentLikes: vi.fn(),
   getStaleLikes: vi.fn(),
@@ -19,11 +20,13 @@ vi.mock("@/lib/proposals", async (importOriginal) => {
 
 import { POST } from "@/pages/api/proposals";
 import { createClient } from "@/lib/supabase";
+import { createAdminClient } from "@/lib/supabase-admin";
 import { getRecentLikes, getStaleLikes, getDislikedIds, getTopCuisine } from "@/lib/history";
 import { buildColdStartSet, buildPersonalizedSet, type ProposedRecipe, type SlottedRecipe } from "@/lib/proposals";
 import type { RecentLike, StaleLike } from "@/lib/history";
 
 const createClientMock = vi.mocked(createClient);
+const createAdminClientMock = vi.mocked(createAdminClient);
 const recentLikes = vi.mocked(getRecentLikes);
 const staleLikes = vi.mocked(getStaleLikes);
 const dislikedIds = vi.mocked(getDislikedIds);
@@ -91,14 +94,17 @@ function setHistory({ likes = [], stales = [], dislikes = [], cuisine = null }: 
   topCuisine.mockResolvedValue(cuisine);
 }
 
-// Hand-built mock client covering persist(): recipes upsert + proposals insert, both green
-// unless a test overrides them.
+// Hand-built mock clients covering persist(): the recipes upsert now travels on the
+// service-role admin client (lesson-2 hardening), the user-scoped proposals insert stays
+// on the session client. Both green unless a test overrides them.
 function mockClient() {
   const upsert = vi.fn().mockResolvedValue({ error: null });
   const insert = vi.fn().mockResolvedValue({ error: null });
-  const from = vi.fn((table: string) => (table === "recipes" ? { upsert } : { insert }));
+  const from = vi.fn(() => ({ insert }));
   createClientMock.mockReturnValue({ from } as unknown as ReturnType<typeof createClient>);
-  return { upsert, insert, from };
+  const adminFrom = vi.fn(() => ({ upsert }));
+  createAdminClientMock.mockReturnValue({ from: adminFrom } as unknown as ReturnType<typeof createAdminClient>);
+  return { upsert, insert, from, adminFrom };
 }
 
 // A full personalized set: slots 1/2 by-id re-fetches of liked recipes (no pinned cuisine),
@@ -272,6 +278,9 @@ describe("POST /api/proposals — persistence rows", () => {
     expect(res.status).toBe(200);
     expect((await res.json()) as { recorded: boolean }).toMatchObject({ recorded: true });
     expect(upsert).toHaveBeenCalledTimes(1);
+    // Repairing upsert: genuine provider data overwrites a pre-existing (possibly spoofed)
+    // row — a reappearing ignoreDuplicates would silently undo the lesson-2 hardening.
+    expect(upsert.mock.calls[0][1]).toEqual({ onConflict: "spoonacular_id" });
     expect(insert).toHaveBeenCalledTimes(1);
 
     const rows = insert.mock.calls[0][0] as Record<string, unknown>[];
@@ -279,6 +288,24 @@ describe("POST /api/proposals — persistence rows", () => {
     expect(rows.every((row) => row.user_id === USER_ID)).toBe(true);
     expect(rows.map((row) => row.spoonacular_id)).toEqual([42, 5, 300, 400]);
     expect(rows.map((row) => row.requested_cuisine)).toEqual([null, null, "thai", "french"]);
+  });
+
+  it("tolerates a missing admin client: 200 with recorded:false, no recipes write attempted", async () => {
+    // SUPABASE_SERVICE_ROLE_KEY unset degrades persistence, never the set itself.
+    const { upsert, insert } = mockClient();
+    createAdminClientMock.mockReturnValue(null);
+    setHistory({ likes: [like(42), like(5)], stales: [stale(5)], cuisine: "thai" });
+    personalized.mockResolvedValue({ ok: true, proposals: fullSet(), degraded: false });
+
+    const res = await POST(makeContext());
+
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { ok: boolean; recorded: boolean; proposals: unknown[] };
+    expect(body.ok).toBe(true);
+    expect(body.recorded).toBe(false);
+    expect(body.proposals).toHaveLength(4);
+    expect(upsert).not.toHaveBeenCalled();
+    expect(insert).not.toHaveBeenCalled();
   });
 
   it("tolerates a persist failure: 200 with recorded:false, the set still served", async () => {

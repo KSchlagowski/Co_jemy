@@ -1,5 +1,6 @@
 import type { APIRoute } from "astro";
 import { createClient } from "@/lib/supabase";
+import { createAdminClient } from "@/lib/supabase-admin";
 import {
   buildColdStartSet,
   buildPersonalizedSet,
@@ -167,10 +168,21 @@ async function persist(
     return true;
   }
 
-  // Re-proposing a known recipe is the normal path, not an error — ignore conflicts on the id.
-  const { error: recipesError } = await supabase.from("recipes").upsert(
+  // The catalogue write goes through the service-role client: `authenticated` no longer
+  // holds insert on `recipes` (lesson-2 hardening), and the repairing upsert — no
+  // ignoreDuplicates — lets genuine provider data overwrite any pre-existing (possibly
+  // spoofed) row and refresh stale titles/images. A missing admin client degrades to the
+  // same tolerant recorded:false path as any other persist failure.
+  const admin = createAdminClient();
+  if (!admin) {
+    // eslint-disable-next-line no-console -- recorded:false is silent by design; this is its only trace.
+    console.error("proposals persist: admin client unavailable (SUPABASE_SERVICE_ROLE_KEY unset)");
+    return false;
+  }
+
+  const { error: recipesError } = await admin.from("recipes").upsert(
     proposals.map((p) => ({ spoonacular_id: p.id, title: p.title, image: p.image })),
-    { onConflict: "spoonacular_id", ignoreDuplicates: true },
+    { onConflict: "spoonacular_id" },
   );
   if (recipesError) {
     // eslint-disable-next-line no-console -- recorded:false is silent by design; this is its only trace.
