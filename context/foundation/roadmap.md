@@ -35,7 +35,7 @@ Meal-decision fatigue wastes time and food: the user is willing to cook but ment
 | S-01 | production-auth-loop        | register, confirm email, and sign in on the production URL        | —             | FR-001, FR-002                         | done     |
 | S-02 | cold-start-proposals        | request proposals and get 4 diverse real recipes with links       | F-01          | US-02, FR-003, FR-008, FR-010, FR-011, NFR (dead-link, mobile) | done |
 | S-03 | rate-recipe                 | rate a proposed recipe 👍/👎; rating persists across sessions      | S-02          | FR-004                                 | done     |
-| S-04 | manage-rated-recipes        | view rated recipes, change a rating, delete a rating              | S-03          | FR-005, FR-006, FR-007                 | proposed |
+| S-04 | manage-rated-recipes        | view rated recipes, change a rating, delete a rating              | S-03          | FR-005, FR-006, FR-007                 | done     |
 | S-05 | personalized-proposal-slots | get proposals observably shaped by rating history (4-slot logic)  | S-02, S-03    | US-01, FR-008, FR-009                  | done |
 
 ## Streams
@@ -129,7 +129,7 @@ Foundations below assume these are present and do NOT re-scaffold them.
 - **Blockers:** —
 - **Unknowns:** —
 - **Risk:** one coherent screen over data S-03 already persists; sequenced after S-03 because there is nothing to manage until ratings exist.
-- **Status:** proposed
+- **Status:** done
 
 ### S-05: Personalized 4-slot proposals
 
@@ -176,6 +176,7 @@ Foundations below assume these are present and do NOT re-scaffold them.
 (Empty on first generation. `/10x-archive` appends an entry here — and flips that item's `Status` to `done` — when a change whose `Change ID` matches the item is archived.)
 
 - **F-01: (foundation) a fetch-based Spoonacular `complexSearch` call is verified working in the deployed Worker and returns recipe candidates (title, description, `sourceUrl`, image); the point cost of one full proposal set is measured against the free plan's daily quota; and the provider's attribution and storage obligations are written down as concrete schema and UI constraints.** — Archived 2026-07-19 → `context/archive/2026-07-16-spoonacular-retrieval-spike/`. Lesson: —.
+- **S-04: user can view the list of their rated recipes, flip a rating (👍 ↔ 👎), and delete a rating to return the recipe to unrated status.** — Archived 2026-08-09 → `context/archive/2026-08-09-manage-rated-recipes/`. Lesson: —.
 - **S-01: register, confirm email, and sign in on the production URL** — Archived 2026-08-08 → `context/archive/2026-07-19-production-auth-loop/`. Lesson: —.
 - **S-03: user can rate any proposed recipe 👍 or 👎, and the rating reliably persists across sessions (the PRD guardrail: losing rating history destroys the core value loop).** — Archived 2026-08-08 → `context/archive/2026-08-08-rate-recipe/`. Lesson: —.
 - **S-02: a logged-in user with no ratings can request proposals and see 4 real recipes from at least 2 different cuisines, each with a title, brief description, and working external link; a dead link is signaled instead of failing silently; proposed recipes are recorded so they can be rated later.** — Archived 2026-08-08 → `context/archive/2026-07-20-cold-start-proposals/`. Lesson: —.
