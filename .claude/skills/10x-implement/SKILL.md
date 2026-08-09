@@ -176,18 +176,9 @@ After implementing a phase:
 
      Set `SHA=""` and skip to step 8.
 
-  6. **Propose a Conventional-Commits message.** Build a subject line in the form `<type>(<change-id>): <phase title> (p<N>)`, where `<type>` is one of `feat / fix / chore / refactor / docs` chosen from the phase's nature (e.g., `feat` for new user-visible behavior, `chore` for prompt/doc edits, `refactor` for restructuring without behavior change). The phase title is the meaningful part and leads; the `(p<N>)` suffix carries the phase index. Build a short body listing the touched files, plus the `Refs:` line from "Tracking issue/task references for commits" when applicable. Use `AskUserQuestion`:
+  6. **Propose a Conventional-Commits message.** Build a subject line in the form `<type>(<change-id>): <phase title> (p<N>)`, where `<type>` is one of `feat / fix / chore / refactor / docs` chosen from the phase's nature (e.g., `feat` for new user-visible behavior, `chore` for prompt/doc edits, `refactor` for restructuring without behavior change). The phase title is the meaningful part and leads; the `(p<N>)` suffix carries the phase index. Build a short body listing the touched files, plus the `Refs:` line from "Tracking issue/task references for commits" when applicable.
 
-     - question: "Approve commit message?"
-       header: "Commit msg"
-       options:
-       - label: "Approve as proposed (Recommended)"
-         description: "Use the message as drafted."
-       - label: "Edit subject line"
-         description: "Override the subject; keep the body."
-       - label: "Override entirely"
-         description: "Replace both subject and body."
-       multiSelect: false
+     Do NOT ask for approval of the commit message — treat the drafted message as approved and proceed straight to step 7. Print the message you are about to use so it stays visible in the transcript.
 
   7. **Commit via heredoc.** Run `git commit` per the global commit-message protocol:
 
@@ -299,7 +290,7 @@ When every `- [ ]` in the entire `## Progress` section is now `- [x]`:
 4. **Run the epilogue commit.** The final phase's commit cannot contain its own SHA (chicken-and-egg), so the SHA write-back into the final phase's Progress rows plus the `change.md` status flip both sit dirty in the working tree after the final phase ritual returns. Author one closing commit to land them — otherwise `/10x-archive`'s hard-refusal gate (uncommitted paths inside the change folder) will block. Steps:
    1. Stage exactly `context/changes/<change-id>/plan.md` and `context/changes/<change-id>/change.md` (explicit paths, no `git add -A`).
    2. Run `git diff --cached --quiet`; if exit code 0, skip the epilogue (nothing trailing to commit) and stop here.
-   3. Propose subject `chore(<change-id>): close out plan (epilogue)` with a short body noting the plan's final SHA write-back + change.md → implemented, plus the `Refs:` line from "Tracking issue/task references for commits" when applicable. Use AskUserQuestion to approve as proposed / edit subject / override entirely (same options as the phase ritual).
+   3. Propose subject `chore(<change-id>): close out plan (epilogue)` with a short body noting the plan's final SHA write-back + change.md → implemented, plus the `Refs:` line from "Tracking issue/task references for commits" when applicable. Do NOT ask for approval — use the drafted message directly (same as the phase ritual); just print it before committing.
    4. Commit via heredoc per the global protocol (never `--no-verify` / `--amend`).
    5. Do NOT write the epilogue's own SHA back into the plan — its only job is to land the trailing edits cleanly.
 
