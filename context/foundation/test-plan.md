@@ -6,7 +6,7 @@
 >
 > Refresh: re-run `/10x-test-plan --refresh` when stale (see §8).
 >
-> Last updated: 2026-08-09 (§3 Phase 1 → `testing-storage-diversity-units` opened for risks #4/#5; risk #1 slice shipped)
+> Last updated: 2026-08-10 (§3 Phase 1 → `complete`: risks #4/#5 shipped as `testing-storage-diversity-units`, so all three of the phase's risks now have runnable unit gates; §5 splits the unit gate's satisfaction from its CI enforcement, which lands in Phase 4)
 >
 > Known staleness (candidates for `--refresh`, not yet reconciled): §4 lists
 > Playwright as "none yet", but `@playwright/test` + `e2e/auth-*.spec.ts` and
@@ -81,9 +81,9 @@ orchestrator updates Status as artifacts appear on disk.
 
 | # | Phase name | Goal (one line) | Risks covered | Test types | Status | Change folder |
 |---|------------|-----------------|---------------|------------|--------|---------------|
-| 1 | Harness + proposal-engine units | Bootstrap the runner; defend the quota budget, storage-field discipline, and request-side diversity at the cheapest layer | #1, #4, #5 | unit | implementing (risk #1 shipped; #4/#5 change opened) | context/changes/testing-harness-proposal-units/ (#1, shipped) · context/changes/testing-storage-diversity-units/ (#4, #5) |
+| 1 | Harness + proposal-engine units | Bootstrap the runner; defend the quota budget, storage-field discipline, and request-side diversity at the cheapest layer | #1, #4, #5 | unit | complete | context/changes/testing-harness-proposal-units/ · context/changes/testing-storage-diversity-units/ |
 | 2 | Proposal API + card-render integration | Prove the endpoint envelope leaks no extra provider call and the card sanitizes/falls back correctly | #1, #6 | integration + component | not started | — |
-| 3 | Rating-loop persistence & isolation | Lock the persistence guardrail, 👎-exclusion, per-user isolation, and the shared-catalogue write guard (lands with S-03/S-05) | #2, #3, #7 | integration | not started | — |
+| 3 | Rating-loop persistence & isolation | Lock the persistence guardrail, 👎-exclusion, per-user isolation, and the shared-catalogue write guard (lands with S-03/S-05), and confirm the `recipes` column set against a live schema | #2, #3, #7, #4 (schema-column half) | integration | not started | — |
 | 4 | E2e critical flow + gates wiring | One end-to-end run of login → propose → rate → re-propose (👎'd recipe absent) and enforce the test gates in CI | #2, #3 | e2e + gates | not started | — |
 
 **Status vocabulary** (fixed — parser literals): `not started` →
@@ -122,10 +122,18 @@ The full set of gates that must pass before a change reaches production.
 "Required after §3 Phase <N>" means the gate is enforced once that rollout
 phase lands; before that, the gate is `planned`.
 
+One gate splits satisfaction from enforcement. The unit gate is **satisfied** —
+§3 Phase 1 is complete and every risk it claims has a runnable test — but it is
+not **enforced**: `.github/workflows/ci.yml` runs `npm ci` → `astro sync` →
+`lint` → `build` and has no `npm test` step, so a regression that reddens
+locally still merges. Wiring it is rollout Phase 4's job ("enforce the test
+gates in CI"), which is why the row below reads "enforced in CI after §3
+Phase 4" rather than "required after §3 Phase 1".
+
 | Gate | Where | Required? | Catches |
 |------|-------|-----------|---------|
 | lint + typecheck (`astro sync` + eslint + build) | local + CI (`ci.yml`) | required (already wired) | syntactic / type drift; react-compiler violations |
-| unit | local + CI | required after §3 Phase 1 | quota/call-count, storage-field, diversity logic regressions (risk #1 suite runnable now via `npm test`; #4/#5 pending) |
+| unit | local + CI | runnable locally now; enforced in CI after §3 Phase 4 | quota/call-count, storage-field discipline (FR-011 key sets at both the DB boundary and the HTTP edge), and request-side diversity regressions — all three of Phase 1's risks (#1, #4, #5) have runnable gates via `npm test` |
 | integration (API + component + RLS) | local + CI | required after §3 Phase 2 | endpoint envelope, card sanitize/fallback, persistence, isolation |
 | e2e on critical flow | CI on PR | required after §3 Phase 4 | broken login → propose → rate → re-propose path |
 | post-edit hook | local (agent loop) | recommended (Module 3 Lesson 3) | regressions at edit time — configured in a later lesson, not here |
@@ -163,6 +171,32 @@ Assert **oracle constants from the PRD** (2 calls, `number=20`, `1 + 0.035n`
 code's own constant makes it a mirror test that passes against a regression.
 **Loop** (~30×) to defeat `Math.random`, never seed.
 
+Three assertion-shape rules from the risks #4/#5 slice, which generalise past
+those two risks:
+
+- **Assert closed key sets, not key absence.** `expect(Object.keys(row).sort())
+  .toEqual([…])` against a hard-coded literal; never per-field
+  `toBeUndefined()`, which is an enumeration and misses the next field the
+  provider adds. Worked examples: the `recipes`/`proposals` row assertions in
+  `src/pages/api/__tests__/proposals.test.ts` and the `RecipeCandidate`
+  whitelist in `src/lib/__tests__/spoonacular.test.ts`.
+- **Make compliance fixtures deliberately dirty.** A clean fixture cannot fail —
+  that is how a storage test passes green while the leak ships. Build the
+  fixture carrying exactly the fields the rule forbids (`dirtyProposed` /
+  `dirtyCandidate`), and where the rule is about provenance, make the forbidden
+  value *contradict* the expected one so a wrong source is visibly wrong rather
+  than coincidentally right. TypeScript idiom: assign the wide object to a
+  variable and return it — a literal in the return position trips the
+  excess-property check, and an `as` cast trips `no-unnecessary-type-assertion`.
+- **Derive the oracle from observed call args** when any constant would mirror
+  the implementation — e.g. checking the delivered set's cuisines against the
+  `cuisine` params read back from `search.mock.calls`
+  (`src/lib/__tests__/proposals.test.ts`).
+
+And the discipline that makes the above worth anything: **run the mutation
+checks**. Break the invariant in production code, confirm the test reddens,
+restore. A compliance test that cannot be made to fail certifies nothing.
+
 ### 6.2 Adding an integration test
 
 TBD — see §3 Phase 2 (Astro API route + `@testing-library/react` component
@@ -187,6 +221,21 @@ patterns against a local Supabase).
 
 (Optional. After each phase lands, `/10x-implement` appends a 2–3 line note
 here capturing anything surprising the rollout phase taught.)
+
+**Phase 1, risks #4/#5 (2026-08-09).** Risk #4's exposure was not a missing
+schema constraint — the `recipes` table has held exactly the three permitted
+columns since the first migration. It was an unnarrowed argument: `persist()`
+receives the wide `ProposedRecipe[]` rather than the narrowed wire payload, so a
+one-character change to `{ ...p }` ships `excerpt` (a derived form of `summary`,
+which FR-011 forbids in any derived form) straight into a write, with nothing in
+the type system objecting. Risk #5's residual exposure was not
+request-vs-response either — the response's `cuisines[]` is *structurally*
+unreachable, since `RecipeCandidate` has no such field. It was
+request-guarantee-vs-delivered-guarantee: two cuisines are always pinned, but a
+call returning HTTP 200 with zero results (the measured behaviour of thin
+cuisines past their corpus) collapses the delivered set to one cuisine from two
+healthy calls. Both risks were correctly implemented and one small edit from
+silent breach, which is what the mutation checks confirmed.
 
 ## 7. What We Deliberately Don't Test
 

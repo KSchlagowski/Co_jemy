@@ -1,9 +1,9 @@
 ---
 change_id: testing-storage-diversity-units
 title: Testing storage diversity units
-status: implementing
+status: complete
 created: 2026-08-09
-updated: 2026-08-09
+updated: 2026-08-10
 archived_at: null
 ---
 
@@ -39,3 +39,37 @@ constants, never import the code's own constants).
 **Scoping caveat:** the persist path changed after the test plan was written
 (`personalized-proposal-slots`, `rate-recipe`, `manage-rated-recipes` all landed).
 Treat the current schema and upsert path as the subject, not the 2026-07-22 snapshot.
+
+---
+
+## Outcome (2026-08-10)
+
+Risks **#4** and **#5** shipped, closing rollout **Phase 1** — all three of its risks
+(#1, #4, #5) now have runnable unit gates. Suite went 66 → 77 tests.
+
+All eleven mutation checks were executed, not just asserted: each broke the invariant in
+production code, reddened its test, and was restored. One correction to the plan — Phase 2's
+mutation check 2.14 ("dedupe the `proposals` insert rows by `spoonacular_id`") is
+**behaviourally inert**: `interleave()` already dedupes by id, so every real set has distinct
+ids and the mutation changes nothing. The assertion was instead exercised by collapsing rows
+on `requested_cuisine`, which reddens 4 tests including the persisted-pin one.
+
+**Scope added during implementation.** The plan's A6 deferred the FR-011 narrowing type to
+§What We're NOT Doing. `context/foundation/lessons.md` §"Never close a compliance slice
+guarded only by a test" forbids exactly that, and prescribes the remedy for this case: the
+type ships before the slice is marked complete, and where a mutation check forces it into a
+separate commit, the follow-on is a named step in `## Progress`. Phase 4 was added on those
+grounds and landed after phases 1–2 had recorded every mutation check, so A6's rationale was
+satisfied rather than overridden. FR-011 is now structural at the write boundary: a spread is
+`TS2741` and an added key `TS2353`, where both previously compiled.
+
+**Deliberately not taken, and where they now live:**
+
+- Risk #7 (`recipes` world-readable via `using (true)`) — rollout Phase 3, already in its row.
+- The migration-column assertion (A3) — rollout Phase 3, now named in §3's Phase 3 row as
+  `#4 (schema-column half)` rather than buried in this folder.
+- A key-set assertion on `toPayload` (the wire projection) — risk #6, rollout Phase 2.
+- CI enforcement of `npm test` — rollout Phase 4. §5's unit-gate row now says so explicitly,
+  so Phase 1 `complete` does not silently claim an enforcement that does not exist.
+
+This plan's `## Progress` remains the per-step execution ledger.

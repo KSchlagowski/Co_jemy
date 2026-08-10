@@ -769,7 +769,7 @@ silent drift.
 
 #### Automated
 
-- [ ] 3.1 Full suite still green after doc edits
+- [x] 3.1 Full suite still green after doc edits
 
 #### Manual
 
@@ -791,7 +791,7 @@ silent drift.
 
 #### Automated
 
-- [x] 4.1 `RecipeRow` / `ProposalRow` types + explicitly-typed `toRecipeRow` / `toProposalRow` builders wired into both write sites
-- [x] 4.2 A spread (`{ ...recipe }`) at the recipes boundary is a compile error, not just a red test
-- [x] 4.3 An added key (`summary: recipe.summary`) at the recipes boundary is a compile error
-- [x] 4.4 Full suite green and `npm run lint` clean with the types in place
+- [x] 4.1 `RecipeRow` / `ProposalRow` types + explicitly-typed `toRecipeRow` / `toProposalRow` builders wired into both write sites — 0fbc4ba
+- [x] 4.2 A spread (`{ ...recipe }`) at the recipes boundary is a compile error, not just a red test — 0fbc4ba
+- [x] 4.3 An added key (`summary: recipe.summary`) at the recipes boundary is a compile error — 0fbc4ba
+- [x] 4.4 Full suite green and `npm run lint` clean with the types in place — 0fbc4ba
