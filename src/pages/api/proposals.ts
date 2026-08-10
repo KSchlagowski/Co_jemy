@@ -159,6 +159,46 @@ export const POST: APIRoute = async (context) => {
   }
 };
 
+/**
+ * FR-011 permits storing exactly a recipe's Spoonacular id, title, and image URL — nothing
+ * else, in any derived form. Declared as a type so that discipline is structural rather than
+ * conventional: `persist()` receives the *wide* `ProposedRecipe[]`, so before this existed the
+ * only thing keeping `summary` (and `excerpt`, a derived form of it) out of a write was a
+ * hand-written object literal that happened to be correct. `{ ...p }` compiled fine.
+ */
+interface RecipeRow {
+  spoonacular_id: number;
+  title: string;
+  image: string | null;
+}
+
+/** The app's *own* request facets. Legal to store precisely because none of it is provider data. */
+interface ProposalRow {
+  user_id: string;
+  spoonacular_id: number;
+  /** The cuisine the app pinned in its request — never the response's `cuisines[]`. NULL on by-id slots. */
+  requested_cuisine: string | null;
+  requested_type: string | null;
+}
+
+// The explicit return type is load-bearing, not decoration: it is what restores TypeScript's
+// excess-property check at this boundary. Without it, freshness is lost through `.map()` and an
+// added `summary:` key compiles silently. With it, both a spread and an extra key are compile
+// errors. The closed key-set tests in `__tests__/proposals.test.ts` guard the same boundary at
+// runtime; the type is the primary defence, the test is what proves it still holds.
+function toRecipeRow(recipe: ProposedRecipe): RecipeRow {
+  return { spoonacular_id: recipe.id, title: recipe.title, image: recipe.image };
+}
+
+function toProposalRow(recipe: ProposedRecipe, userId: string): ProposalRow {
+  return {
+    user_id: userId,
+    spoonacular_id: recipe.id,
+    requested_cuisine: recipe.requestedCuisine,
+    requested_type: null,
+  };
+}
+
 async function persist(
   supabase: NonNullable<ReturnType<typeof createClient>>,
   userId: string,
@@ -182,24 +222,18 @@ async function persist(
     return false;
   }
 
-  const { error: recipesError } = await admin.from("recipes").upsert(
-    proposals.map((p) => ({ spoonacular_id: p.id, title: p.title, image: p.image })),
-    { onConflict: "spoonacular_id" },
-  );
+  const { error: recipesError } = await admin
+    .from("recipes")
+    .upsert(proposals.map(toRecipeRow), { onConflict: "spoonacular_id" });
   if (recipesError) {
     // eslint-disable-next-line no-console -- recorded:false is silent by design; this is its only trace.
     console.error("proposals persist: recipes upsert failed", recipesError.code, recipesError.message);
     return false;
   }
 
-  const { error: proposalsError } = await supabase.from("proposals").insert(
-    proposals.map((p) => ({
-      user_id: userId,
-      spoonacular_id: p.id,
-      requested_cuisine: p.requestedCuisine,
-      requested_type: null,
-    })),
-  );
+  const { error: proposalsError } = await supabase
+    .from("proposals")
+    .insert(proposals.map((p) => toProposalRow(p, userId)));
   if (proposalsError) {
     // eslint-disable-next-line no-console -- recorded:false is silent by design; this is its only trace.
     console.error("proposals persist: rows insert failed", proposalsError.code, proposalsError.message);

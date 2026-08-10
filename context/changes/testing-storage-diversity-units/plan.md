@@ -747,14 +747,14 @@ silent drift.
 
 #### Automated
 
-- [x] 2.1 Delivered-set ≥2-cuisine test passes across ~30 iterations
-- [x] 2.2 200-with-zero-results collapse test passes (single-cuisine set + `degraded`, exactly 2 calls, 0 by-id)
-- [x] 2.3 Double-zero-results test passes (empty set + `degraded`)
-- [x] 2.4 Contradictory-`cuisines[]` test passes, including `degraded === false`
-- [x] 2.5 By-id NULL provenance test passes against a dirty by-id candidate
-- [x] 2.6 Both `CUISINES` mirror assertions replaced; the now-unused import removed
-- [x] 2.7 Persisted-rows-carry-the-pin test passes (values + one row per proposal)
-- [x] 2.8 Full suite green
+- [x] 2.1 Delivered-set ≥2-cuisine test passes across ~30 iterations — 3e6673e
+- [x] 2.2 200-with-zero-results collapse test passes (single-cuisine set + `degraded`, exactly 2 calls, 0 by-id) — 3e6673e
+- [x] 2.3 Double-zero-results test passes (empty set + `degraded`) — 3e6673e
+- [x] 2.4 Contradictory-`cuisines[]` test passes, including `degraded === false` — 3e6673e
+- [x] 2.5 By-id NULL provenance test passes against a dirty by-id candidate — 3e6673e
+- [x] 2.6 Both `CUISINES` mirror assertions replaced; the now-unused import removed — 3e6673e
+- [x] 2.7 Persisted-rows-carry-the-pin test passes (values + one row per proposal) — 3e6673e
+- [x] 2.8 Full suite green — 3e6673e
 
 #### Manual
 
@@ -777,3 +777,21 @@ silent drift.
 - [ ] 3.3 A reader can add a storage-discipline test from §6.1 alone
 - [ ] 3.4 §3 Phase 1 `complete` is honest — every risk it claims (#1, #4, #5) has a runnable gate, and §5's Required? cell defers CI enforcement to rollout Phase 4
 - [ ] 3.5 The A3 deferral is visible in the test plan — §3's Phase 3 row names `#4 (schema-column half)`
+
+### Phase 4: Make FR-011 Structural at the Write Boundary
+
+> Added during implementation, not present in the original plan. `context/foundation/lessons.md`
+> §"Never close a compliance slice guarded only by a test" requires the narrowing type to ship
+> before the slice is marked complete, and requires that — when a mutation check forces it into
+> a separate commit — the follow-on be **a named step in `## Progress`, not a line in §What
+> We're NOT Doing**. The plan's A6 put it in §What We're NOT Doing, which is the case the lesson
+> names. A6's rationale (a production change in the same commit would destroy the mutation
+> checks) is satisfied rather than contradicted: all eleven mutation checks ran and were
+> committed in phases 1–2 before this phase touched production code.
+
+#### Automated
+
+- [x] 4.1 `RecipeRow` / `ProposalRow` types + explicitly-typed `toRecipeRow` / `toProposalRow` builders wired into both write sites
+- [x] 4.2 A spread (`{ ...recipe }`) at the recipes boundary is a compile error, not just a red test
+- [x] 4.3 An added key (`summary: recipe.summary`) at the recipes boundary is a compile error
+- [x] 4.4 Full suite green and `npm run lint` clean with the types in place
