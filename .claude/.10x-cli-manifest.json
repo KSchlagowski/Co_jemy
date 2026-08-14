@@ -2,8 +2,8 @@
   "package": "@przeprogramowani/10x-cli",
   "version": "1.11.0",
   "manifestVersion": 3,
-  "lastApplied": "2026-08-10T15:44:12.158Z",
-  "lessonId": "m4l2",
+  "lastApplied": "2026-08-11T22:29:09.536Z",
+  "lessonId": "m5l1",
   "course": "10xdevs3",
   "tool": "claude-code",
   "files": {
@@ -241,6 +241,22 @@
           "references/seed-test-pattern.md": "90fa8778a557d0c88320e839c6a8879735b3390b68ed89b3487258f2562b2f80",
           "SKILL.md": "85a9ab63aedcac669951aa90a98e7e3d4e4e5fa59b0340ee3f62505bbfed4ad1"
         }
+      },
+      "10x-opportunity-map": {
+        "files": [
+          "SKILL.md"
+        ],
+        "contentHashes": {
+          "SKILL.md": "df8ddeb8377253b41b2de7812dedcf3fce8ddf3489e4ad52a7cc20e8b72f939f"
+        }
+      },
+      "10x-mom-test": {
+        "files": [
+          "SKILL.md"
+        ],
+        "contentHashes": {
+          "SKILL.md": "6b992b77c723413a9b805280cf83da0ca5b848742dca49129d34f59e241149e8"
+        }
       }
     },
     "prompts": [
@@ -253,7 +269,10 @@
       "m4l2-1-territory-git-history.md",
       "m4l2-2-structure-dependency-cruiser.md",
       "m4l2-3-contributors-git.md",
-      "m4l2-repo-map-synthesis.md"
+      "m4l2-repo-map-synthesis.md",
+      "m4l4-1-new-change-intention.md",
+      "m4l4-2-refactor-opportunities-research.md",
+      "m4l4-3-ranking-ast-grep-verification.md"
     ],
     "configs": [],
     "promptHashes": {
@@ -266,7 +285,10 @@
       "m4l2-1-territory-git-history.md": "37a48d9095fa02fe2147190a9d4fdcf74a780f556b1e9d25945dd06f33bec5f2",
       "m4l2-2-structure-dependency-cruiser.md": "0b0a15d46647bc28c0d41c901b2d07366edb9172bc0a529abe03488fb8de186c",
       "m4l2-3-contributors-git.md": "fc600f19f40cfbc16bec152e1326021b3118d95f43c7bd2519986dcf3318fb50",
-      "m4l2-repo-map-synthesis.md": "8112d4b13fcb4a909308a82a696a64ef1a659e9e3b20238eeae7cccf228352b4"
+      "m4l2-repo-map-synthesis.md": "8112d4b13fcb4a909308a82a696a64ef1a659e9e3b20238eeae7cccf228352b4",
+      "m4l4-1-new-change-intention.md": "932b65e90f5f4c4ed289b14a457c9950ff59edd22e1a8a2baba5f6e8db3f20a0",
+      "m4l4-2-refactor-opportunities-research.md": "085635e4e677824f475daaadc2b6f7d1df2af6591bfd6fdfc0facbdefeee4413",
+      "m4l4-3-ranking-ast-grep-verification.md": "986364bd6fda83c28d746ef7bbd9f9383d6b9d26af84430cc6a28e89c74138c2"
     }
   },
   "lessons": {
@@ -1605,6 +1627,33 @@
         "m4l2-3-contributors-git.md",
         "m4l2-repo-map-synthesis.md"
       ],
+      "configs": []
+    },
+    "m4l4": {
+      "appliedAt": "2026-08-11T15:26:44.195Z",
+      "skills": {},
+      "prompts": [
+        "m4l4-1-new-change-intention.md",
+        "m4l4-2-refactor-opportunities-research.md",
+        "m4l4-3-ranking-ast-grep-verification.md"
+      ],
+      "configs": []
+    },
+    "m5l1": {
+      "appliedAt": "2026-08-11T22:29:09.535Z",
+      "skills": {
+        "10x-opportunity-map": {
+          "files": [
+            "SKILL.md"
+          ]
+        },
+        "10x-mom-test": {
+          "files": [
+            "SKILL.md"
+          ]
+        }
+      },
+      "prompts": [],
       "configs": []
     }
   }

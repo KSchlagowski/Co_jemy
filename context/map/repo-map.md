@@ -1,7 +1,7 @@
 # Repo Map — Co jemy?
 
 **Zbudowano z:** [`artifact-1-territory.md`](artifact-1-territory.md) (aktywność/git) · [`artifact-2-structure.md`](artifact-2-structure.md) (graf importów, dependency-cruiser) · [`artifact-3-contributors.md`](artifact-3-contributors.md) (kontrybutorzy)
-**Data:** 2026-08-10 · **Okno danych:** cała historia repo, 68 commitów, 2026-05-23 → 2026-08-10 (~3 miesiące, nie 12 — patrz [Ograniczenia](#7-ograniczenia))
+**Data:** 2026-08-10 · **Skorygowano:** 2026-08-10 na podstawie [`../changes/proposals-dataflow/research.md`](../changes/proposals-dataflow/research.md) (sekcje 2, 3, 4 — ryzyka #1, #3, #4, #5) · **Okno danych:** cała historia repo, 68 commitów, 2026-05-23 → 2026-08-10 (~3 miesiące, nie 12 — patrz [Ograniczenia](#7-ograniczenia))
 
 ---
 
@@ -53,7 +53,7 @@ flowchart TD
 `src/pages/api/proposals.ts` i `src/lib/history.ts` — to dwa moduły, przez które przechodzi niemal każda zmiana funkcjonalna (git: najczęściej współwystępujące pary/trójki katalogów; graf importów: najwyższy fan-out w repo). `src/lib/supabase.ts` jest strukturalnie głęboki mimo niskiej częstotliwości zmian — fan-in 12, największy w repo, ale rzadko dotykany po zbudowaniu w `production-auth-loop` (07-20).
 
 **Płytkie / peryferyjne:**
-`src/components/auth`, `src/pages/auth` — zbudowane w Q2 (czerwiec), potem prawie nietykane. `src/lib/config-status.ts` — orphan w grafie importów (0 fan-in, 0 fan-out), warty 5-minutowej weryfikacji czy jest w ogóle używany (może dynamic import / runtime lookup).
+`src/components/auth`, `src/pages/auth` — zbudowane w Q2 (czerwiec), potem prawie nietykane. `src/lib/config-status.ts` — pokazywał się jako orphan w grafie importów (0 fan-in, 0 fan-out); **weryfikacja 2026-08-10: jest używany przez `src/layouts/Layout.astro:4`** (baner konfiguracyjny), orphan był artefaktem zakresu narzędzia, nie martwym kodem.
 
 **Aktywność w czasie — dwie epoki, ostra granica 18.07.2026:**
 
@@ -78,7 +78,7 @@ Licząc surowe dotknięcia w gicie, `context/changes` (90) i `.claude/skills` (5
 |---|---|---|
 | `api/proposals.ts` ↔ `lib/{proposals,history,spoonacular}.ts` ↔ `components/proposals/*` | **Graf importów** (dependency-cruiser, runtime edges) + git (współwystępowanie w commitach) | Ręczne, silne — to jest oś produktu |
 | `components/proposals/types.ts` ↔ `components/ratings/types.ts` | **Graf importów**: `ratings/types.ts → proposals/types.ts`, jednokierunkowo, wyłącznie `import type` | Ręczne, ale zero runtime coupling — typy usuwane w kompilacji |
-| `lib/history.ts` ↔ `supabase/migrations` | **Git** (współwystępowanie w commitach; supabase/migrations poza grafem importów TS) | Ręczne — jedyne miejsce, gdzie zmiana logiki domenowej regularnie wymusza migrację schematu |
+| `lib/history.ts` ↔ `supabase/migrations` | **Git** (współwystępowanie w commitach; supabase/migrations poza grafem importów TS) | Ręczne — jedyne miejsce, gdzie zmiana logiki domenowej regularnie wymusza migrację schematu. **Potwierdzone 2026-08-10: 2 z 4 commitów `history.ts` dotykają `20260809120000_personalized_proposal_slots.sql`**; widoki `liked_recipe_history` i `cuisine_affinity` ruszają się razem z `src/lib/history.ts:75,174` |
 | `CLAUDE.md` ↔ prawie cały repo (54 różne obszary) | **Git** (współwystępowanie) | Ręczne, ale to sprzężenie warstwy wiedzy, nie kodu — każda decyzja architektoniczna dopisuje regułę |
 | `context/changes/<id>` ↔ `context/archive/<data>-<id>` | **Git** (rename/move) | **Tanie — przez regenerację/przenosiny skryptem `/10x-archive`, nie ręczną edycję treści.** Nie liczyć jako realne sprzężenie przy ocenie kosztu zmiany. |
 | `CLAUDE.md` ↔ `.claude/.10x-cli-manifest.json` (8 wspólnych commitów, najsilniejsza para w repo) | **Git** | **Tanie po stronie manifestu — plik jest generowany przez toolkit 10x-cli przy aktualizacji skilli, nie edytowany ręcznie.** CLAUDE.md samo jest ręczne. |
@@ -107,11 +107,11 @@ Dependency-cruiser objął wyłącznie `src/` (TypeScript/Astro). **Poniższe wa
 
 | # | Obszar | Dlaczego |
 |---|---|---|
-| 1 | `src/pages/api/proposals.ts` | Węzeł orkiestracji — jedyny plik łączący oba klienty Supabase (user + admin) w jednej funkcji; błąd w wyborze klienta = błąd uprawnień RLS. Najwyższy fan-out w repo (5). |
+| 1 | `src/pages/api/proposals.ts` | Węzeł orkiestracji — jedyny plik łączący oba klienty Supabase (user + admin) w jednej funkcji; błąd w wyborze klienta = błąd uprawnień RLS. Najwyższy fan-out w repo (5). **Zweryfikowane 2026-08-10 (`proposals-dataflow/research.md` §1.5): rozdział klientów jest świadomą decyzją, nie przypadkiem** — `revoke insert on public.recipes from authenticated` (`supabase/migrations/20260809180000_manage_rated_recipes.sql:28-29`) jest przyczyną istnienia `createAdminClient()`; wszystko kluczowane userem zostało na kliencie sesyjnym, żeby RLS pozostało punktem egzekwowania. Ryzyko pozostaje jako powierzchnia regresji, ale nie jako otwarty problem projektowy. |
 | 2 | `src/lib/supabase.ts` | Najwyższy fan-in w repo (12) — najszerszy blast radius przy zmianie sygnatury, mimo że rzadko zmieniany (fundament, nie aktywne pole pracy). |
 | 3 | `src/lib/history.ts` | Jedyne miejsce, gdzie zmiana logiki domenowej regularnie ciągnie za sobą migrację schematu bazy — zmiana tu nie kończy się na kodzie TS. |
-| 4 | Brak e2e dla głównej pętli produktu | US-01 (request → 4 propozycje → klik → link zewnętrzny → ocena → wpływ na przyszłe propozycje) nie ma pokrycia przeglądarkowego mimo istniejącego harnessu Playwright — regresja tu przejdzie niezauważona przez CI. |
-| 5 | `src/lib/config-status.ts` | Orphan w grafie importów (0/0) — niejasne czy martwy kod, czy odczytywany dynamicznie; ryzyko usunięcia czegoś używanego lub utrzymywania czegoś zbędnego. |
+| 4 | Brak e2e dla głównej pętli produktu | US-01 (request → 4 propozycje → klik → link zewnętrzny → ocena → wpływ na przyszłe propozycje) nie ma pokrycia przeglądarkowego mimo istniejącego harnessu Playwright — regresja tu przejdzie niezauważona przez CI. **Potwierdzone i doprecyzowane 2026-08-10** (`proposals-dataflow/research.md` D-5): `e2e/` pokrywa tylko bramki auth i jedną asercję FR-010; brak kliknięcia 👍/👎, strony `/dashboard/ratings`, nazwy wydawcy, badge'ów slotów i asercji „👎 nigdy nie wraca". Dodatkowo `seed.spec.ts` używa współdzielonego konta, więc kryterium US-02 „min. 2 kuchnie" nie jest nigdzie sprawdzane. |
+| 5 | ~~`src/lib/config-status.ts`~~ **— skorygowane 2026-08-10, nie jest ryzykiem** | Mapa raportowała orphana (0/0 w grafie importów). Weryfikacja w `proposals-dataflow/research.md` (D-14) pokazała, że plik **jest używany** — `src/layouts/Layout.astro:4` renderuje z niego baner konfiguracyjny. Orphan był artefaktem zakresu dependency-cruisera (pliki `.astro` nie były przeszukiwane jako importerzy), nie martwym kodem. |
 | 6 | Bus factor = 1 na całej powierzchni kodu aplikacyjnego | Jeden kontrybutor-człowiek w całej historii; kontekst decyzji („dlaczego dwa klienty Supabase", „dlaczego offset capped na 900") nie jest odtwarzalny bez dostępu do niego lub do `context/changes`/`context/archive`. |
 
 ---
