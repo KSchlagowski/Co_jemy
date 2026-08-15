@@ -769,7 +769,7 @@ silent drift.
 
 #### Automated
 
-- [x] 3.1 Full suite still green after doc edits
+- [x] 3.1 Full suite still green after doc edits — 80e9b7f
 
 #### Manual
 
