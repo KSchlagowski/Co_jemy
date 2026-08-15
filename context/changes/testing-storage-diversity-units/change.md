@@ -1,7 +1,7 @@
 ---
 change_id: testing-storage-diversity-units
 title: Testing storage diversity units
-status: complete
+status: impl_reviewed
 created: 2026-08-09
 updated: 2026-08-15
 archived_at: null
@@ -44,3 +44,13 @@ Treat the current schema and upsert path as the subject, not the 2026-07-22 snap
 `test-plan.md` §3. Two follow-ons this slice deliberately did not take: the `Pick<>`
 typed row helper (A6) and risk #7 / the migration schema assertion (rollout Phase 3).
 This plan's `## Progress` remains the per-step execution ledger.
+
+**Impl-reviewed 2026-08-15** (`reviews/impl-review.md`): all 11 mutation checks were run
+during the review — 10 reddened, one (2.14, dedupe by `spoonacular_id`) stayed green because
+the fixture used distinct ids. Fixed with a repeated-id sibling test; **11/11 now redden** and
+all 15 Manual boxes are ticked. Status moved back from `complete` to `impl_reviewed` because
+the review opened **Phase 4** in `## Progress`: the `Pick<>` FR-011 narrowing (A6) is now a
+named, tracked step rather than a §What-We're-NOT-Doing line, per the lessons.md rule
+"Never close a compliance slice guarded only by a test". Deferred, not taken: the
+`.dependency-cruiser.cjs` lint failure (pre-existing; `npm run lint` exits 1) needs its own
+housekeeping change.

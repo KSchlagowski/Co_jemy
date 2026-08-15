@@ -11,6 +11,10 @@ describe("test harness", () => {
     expect(CUISINES.length).toBeGreaterThan(1);
   });
 
+  // The imported `CUISINES` is deliberate here and is NOT the diversity oracle: this file
+  // proves the module graph resolves, so importing the real constant is the point. The
+  // mirror-free oracle that pins the six *measured* cuisines lives in `proposals.test.ts`
+  // (`VERIFIED_CUISINES`) — a wholesale pool replacement is caught there, not here.
   // Loop rather than seed: the distinct-pair invariant must hold across every seed.
   it("pickCuisinePair returns two distinct known cuisines", () => {
     for (let i = 0; i < 30; i++) {

@@ -217,13 +217,13 @@ describe("POST /api/proposals — mode routing", () => {
     const body = (await res.json()) as {
       ok: boolean;
       mode: string;
-      proposals: { slot: number; ratingVerdict: string | null }[];
+      proposals: { slot: number; ratingVerdict: string | null; asDesigned: boolean }[];
     };
     expect(body.mode).toBe("cold_start");
     expect(body.proposals.map((p) => p.slot)).toEqual([1, 2, 3]);
     expect(body.proposals.every((p) => p.ratingVerdict === null)).toBe(true);
     // Positional slots carry no provenance — the client must never badge a cold-start card.
-    expect(body.proposals.every((p) => p.asDesigned === false)).toBe(true);
+    expect(body.proposals.every((p) => !p.asDesigned)).toBe(true);
   });
 
   it("≥1 like → personalized path, fed exactly the four history reads", async () => {
@@ -364,6 +364,30 @@ describe("POST /api/proposals — persistence rows", () => {
     expect(distinct).toEqual(new Set(["italian", "mexican"]));
   });
 
+  it("cold start: a repeated spoonacular_id still writes one proposals row per proposal (risk #5)", async () => {
+    // The sibling above pins carriage against *distinct* ids, so an id-keyed dedupe in
+    // `persist()` is a no-op there and cannot redden it — a clean fixture that cannot fail.
+    // Here two proposals deliberately share id 1 with different pins: `recipes` is a
+    // catalogue and legitimately upserts on `spoonacular_id`, but `proposals` is an event
+    // log, so borrowing that dedupe for the insert would silently drop a row and starve
+    // `cuisine_affinity` of the second pin. Asserts the rows survive, not that the engine
+    // can emit a duplicate id.
+    const { insert } = mockClient();
+    coldStart.mockResolvedValue({
+      ok: true,
+      proposals: [proposed(1, "italian"), proposed(1, "mexican"), proposed(2, "italian")],
+      degraded: false,
+    });
+
+    const res = await POST(makeContext());
+
+    expect(res.status).toBe(200);
+    const rows = insert.mock.calls[0][0] as Record<string, unknown>[];
+    expect(rows).toHaveLength(3);
+    expect(rows.map((row) => row.spoonacular_id)).toEqual([1, 1, 2]);
+    expect(rows.map((row) => row.requested_cuisine)).toEqual(["italian", "mexican", "italian"]);
+  });
+
   it("tolerates a missing admin client: 200 with recorded:false, no recipes write attempted", async () => {
     // SUPABASE_SERVICE_ROLE_KEY unset degrades persistence, never the set itself.
     const { upsert, insert } = mockClient();
@@ -447,7 +471,8 @@ describe("POST /api/proposals — storage-field discipline (FR-011)", () => {
     const rows = insert.mock.calls[0][0] as Record<string, unknown>[];
     expect(rows).toHaveLength(4);
     for (const row of rows) {
-      // Closed set, complementing :286-290's value-level assertions — an added `summary`
+      // Closed set, complementing the "persists to both tables" test's value-level
+      // assertions above — an added `summary`
       // column would pass those but fail here.
       expect(Object.keys(row).sort()).toEqual(PROPOSALS_APP_COLUMNS);
     }
