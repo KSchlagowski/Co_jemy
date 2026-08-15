@@ -337,6 +337,33 @@ describe("POST /api/proposals — persistence rows", () => {
     expect(rows.map((row) => row.requested_cuisine)).toEqual([null, null, "thai", "french"]);
   });
 
+  it("cold start: rows carry the engine's per-recipe pin unchanged, one row per proposal (risk #5)", async () => {
+    // The DB-side face of risk #5, on the cold-start branch — the branch US-02 binds and the
+    // one no other persistence assertion exercises. The endpoint must carry each recipe's
+    // pinned cuisine into `requested_cuisine` untouched: never re-derived, defaulted, or
+    // collapsed to one row per cuisine. `cuisine_affinity` reads this column back to drive
+    // slot 3, so a collapse here would starve the taste profile silently. This asserts
+    // carriage only — diversity itself is the engine's guarantee, not the endpoint's.
+    const { insert } = mockClient();
+    coldStart.mockResolvedValue({
+      ok: true,
+      proposals: [proposed(1, "italian"), proposed(2, "mexican"), proposed(3, "italian"), proposed(4, "mexican")],
+      degraded: false,
+    });
+
+    const res = await POST(makeContext());
+
+    expect(res.status).toBe(200);
+    expect(insert).toHaveBeenCalledTimes(1);
+    const rows = insert.mock.calls[0][0] as Record<string, unknown>[];
+    // One row per proposal — a repeated cuisine must not dedupe rows.
+    expect(rows).toHaveLength(4);
+    expect(rows.map((row) => row.requested_cuisine)).toEqual(["italian", "mexican", "italian", "mexican"]);
+    const distinct = new Set(rows.map((row) => row.requested_cuisine));
+    expect(distinct.size).toBeGreaterThanOrEqual(2);
+    expect(distinct).toEqual(new Set(["italian", "mexican"]));
+  });
+
   it("tolerates a missing admin client: 200 with recorded:false, no recipes write attempted", async () => {
     // SUPABASE_SERVICE_ROLE_KEY unset degrades persistence, never the set itself.
     const { upsert, insert } = mockClient();

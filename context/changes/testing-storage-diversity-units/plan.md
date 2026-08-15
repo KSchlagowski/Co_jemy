@@ -728,12 +728,12 @@ silent drift.
 
 #### Automated
 
-- [x] 1.1 `recipes` upsert key-set + value + table-name tests pass
-- [x] 1.2 `proposals` insert key-set + table-name tests pass
-- [x] 1.3 `requested_cuisine` provenance test (pinned value; NULL on by-id) passes
-- [x] 1.4 `toCandidate` whitelist tests pass for both `searchRecipes` and `getRecipeById`
-- [x] 1.5 Existing 66 tests still green — no regression from the new fixtures
-- [x] 1.6 Lint incl. strict type-check passes on the dirty-fixture idiom
+- [x] 1.1 `recipes` upsert key-set + value + table-name tests pass — b47905d
+- [x] 1.2 `proposals` insert key-set + table-name tests pass — b47905d
+- [x] 1.3 `requested_cuisine` provenance test (pinned value; NULL on by-id) passes — b47905d
+- [x] 1.4 `toCandidate` whitelist tests pass for both `searchRecipes` and `getRecipeById` — b47905d
+- [x] 1.5 Existing 66 tests still green — no regression from the new fixtures — b47905d
+- [x] 1.6 Lint incl. strict type-check passes on the dirty-fixture idiom — b47905d
 
 #### Manual
 
@@ -747,14 +747,14 @@ silent drift.
 
 #### Automated
 
-- [ ] 2.1 Delivered-set ≥2-cuisine test passes across ~30 iterations
-- [ ] 2.2 200-with-zero-results collapse test passes (single-cuisine set + `degraded`, exactly 2 calls, 0 by-id)
-- [ ] 2.3 Double-zero-results test passes (empty set + `degraded`)
-- [ ] 2.4 Contradictory-`cuisines[]` test passes, including `degraded === false`
-- [ ] 2.5 By-id NULL provenance test passes against a dirty by-id candidate
-- [ ] 2.6 Both `CUISINES` mirror assertions replaced; the now-unused import removed
-- [ ] 2.7 Persisted-rows-carry-the-pin test passes (values + one row per proposal)
-- [ ] 2.8 Full suite green
+- [x] 2.1 Delivered-set ≥2-cuisine test passes across ~30 iterations
+- [x] 2.2 200-with-zero-results collapse test passes (single-cuisine set + `degraded`, exactly 2 calls, 0 by-id)
+- [x] 2.3 Double-zero-results test passes (empty set + `degraded`)
+- [x] 2.4 Contradictory-`cuisines[]` test passes, including `degraded === false`
+- [x] 2.5 By-id NULL provenance test passes against a dirty by-id candidate
+- [x] 2.6 Both `CUISINES` mirror assertions replaced; the now-unused import removed
+- [x] 2.7 Persisted-rows-carry-the-pin test passes (values + one row per proposal)
+- [x] 2.8 Full suite green
 
 #### Manual
 
