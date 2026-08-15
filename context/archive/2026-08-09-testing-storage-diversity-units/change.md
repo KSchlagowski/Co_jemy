@@ -1,10 +1,10 @@
 ---
 change_id: testing-storage-diversity-units
 title: Testing storage diversity units
-status: impl_reviewed
+status: archived
 created: 2026-08-09
 updated: 2026-08-15
-archived_at: null
+archived_at: 2026-08-15T15:04:18Z
 ---
 
 ## Notes
