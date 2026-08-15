@@ -728,12 +728,12 @@ silent drift.
 
 #### Automated
 
-- [ ] 1.1 `recipes` upsert key-set + value + table-name tests pass
-- [ ] 1.2 `proposals` insert key-set + table-name tests pass
-- [ ] 1.3 `requested_cuisine` provenance test (pinned value; NULL on by-id) passes
-- [ ] 1.4 `toCandidate` whitelist tests pass for both `searchRecipes` and `getRecipeById`
-- [ ] 1.5 Existing 66 tests still green — no regression from the new fixtures
-- [ ] 1.6 Lint incl. strict type-check passes on the dirty-fixture idiom
+- [x] 1.1 `recipes` upsert key-set + value + table-name tests pass
+- [x] 1.2 `proposals` insert key-set + table-name tests pass
+- [x] 1.3 `requested_cuisine` provenance test (pinned value; NULL on by-id) passes
+- [x] 1.4 `toCandidate` whitelist tests pass for both `searchRecipes` and `getRecipeById`
+- [x] 1.5 Existing 66 tests still green — no regression from the new fixtures
+- [x] 1.6 Lint incl. strict type-check passes on the dirty-fixture idiom
 
 #### Manual
 

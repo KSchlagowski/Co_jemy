@@ -1,9 +1,9 @@
 ---
 change_id: testing-storage-diversity-units
 title: Testing storage diversity units
-status: plan_reviewed
+status: implementing
 created: 2026-08-09
-updated: 2026-08-09
+updated: 2026-08-15
 archived_at: null
 ---
 
