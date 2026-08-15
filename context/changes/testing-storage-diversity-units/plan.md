@@ -747,14 +747,14 @@ silent drift.
 
 #### Automated
 
-- [x] 2.1 Delivered-set ≥2-cuisine test passes across ~30 iterations
-- [x] 2.2 200-with-zero-results collapse test passes (single-cuisine set + `degraded`, exactly 2 calls, 0 by-id)
-- [x] 2.3 Double-zero-results test passes (empty set + `degraded`)
-- [x] 2.4 Contradictory-`cuisines[]` test passes, including `degraded === false`
-- [x] 2.5 By-id NULL provenance test passes against a dirty by-id candidate
-- [x] 2.6 Both `CUISINES` mirror assertions replaced; the now-unused import removed
-- [x] 2.7 Persisted-rows-carry-the-pin test passes (values + one row per proposal)
-- [x] 2.8 Full suite green
+- [x] 2.1 Delivered-set ≥2-cuisine test passes across ~30 iterations — d928729
+- [x] 2.2 200-with-zero-results collapse test passes (single-cuisine set + `degraded`, exactly 2 calls, 0 by-id) — d928729
+- [x] 2.3 Double-zero-results test passes (empty set + `degraded`) — d928729
+- [x] 2.4 Contradictory-`cuisines[]` test passes, including `degraded === false` — d928729
+- [x] 2.5 By-id NULL provenance test passes against a dirty by-id candidate — d928729
+- [x] 2.6 Both `CUISINES` mirror assertions replaced; the now-unused import removed — d928729
+- [x] 2.7 Persisted-rows-carry-the-pin test passes (values + one row per proposal) — d928729
+- [x] 2.8 Full suite green — d928729
 
 #### Manual
 
@@ -769,7 +769,7 @@ silent drift.
 
 #### Automated
 
-- [ ] 3.1 Full suite still green after doc edits
+- [x] 3.1 Full suite still green after doc edits
 
 #### Manual
 

@@ -1,7 +1,7 @@
 ---
 change_id: testing-storage-diversity-units
 title: Testing storage diversity units
-status: implementing
+status: complete
 created: 2026-08-09
 updated: 2026-08-15
 archived_at: null
@@ -39,3 +39,8 @@ constants, never import the code's own constants).
 **Scoping caveat:** the persist path changed after the test plan was written
 (`personalized-proposal-slots`, `rate-recipe`, `manage-rated-recipes` all landed).
 Treat the current schema and upsert path as the subject, not the 2026-07-22 snapshot.
+
+**Closed 2026-08-15:** risks #4 and #5 shipped; rollout Phase 1 is now closed in
+`test-plan.md` §3. Two follow-ons this slice deliberately did not take: the `Pick<>`
+typed row helper (A6) and risk #7 / the migration schema assertion (rollout Phase 3).
+This plan's `## Progress` remains the per-step execution ledger.
