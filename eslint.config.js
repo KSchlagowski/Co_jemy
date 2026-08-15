@@ -70,9 +70,10 @@ const astroConfig = tseslint.config({
 
 export default tseslint.config(
   includeIgnoreFile(gitignorePath),
-  // Agent-harness scripts, not app code — they sit outside tsconfig's project service, so
-  // type-aware linting can only fail on them. `npm run lint` is a hard CI gate before deploy.
-  { ignores: [".claude/**"] },
+  // Agent-harness scripts and tooling configs, not app code — they sit outside tsconfig's
+  // project service (tsconfig's `**/*` glob skips dotfiles), so type-aware linting can only
+  // fail on them. `npm run lint` is a hard CI gate before deploy.
+  { ignores: [".claude/**", ".dependency-cruiser.cjs"] },
   baseConfig,
   reactConfig,
   eslintPluginAstro.configs["flat/recommended"],
