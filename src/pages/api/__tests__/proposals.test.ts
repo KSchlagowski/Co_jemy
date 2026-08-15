@@ -114,6 +114,53 @@ function fullSet(): SlottedRecipe[] {
   return [slotted(42, 1, null), slotted(5, 2, null), slotted(300, 3, "thai"), slotted(400, 4, "french", false)];
 }
 
+// PRD FR-011: the app stores only a recipe's Spoonacular id, title, and image URL — the
+// closed column set of a `recipes` row. Hard-coded (never imported from the implementation)
+// and already in JS default-sort order, so it compares directly against Object.keys().sort().
+const FR011_RECIPE_COLUMNS = ["image", "spoonacular_id", "title"];
+
+// Test-plan §2 #4: a `proposals` row carries only the app's own request facets plus identity —
+// no provider recipe field ever lands here. Same hard-coded, default-sort-order discipline.
+const PROPOSALS_APP_COLUMNS = ["requested_cuisine", "requested_type", "spoonacular_id", "user_id"];
+
+function dirtyProposed(id: number, requestedCuisine: string | null): ProposedRecipe {
+  // Wider than ProposedRecipe on purpose: `cuisines`/`dishTypes`/`nutrition` are the
+  // forbidden provider fields, `summary`/`excerpt` the permitted-in-memory-only ones.
+  // Assigned to a variable first — an object literal in the return position would trip
+  // the excess-property check, and an `as` cast would trip no-unnecessary-type-assertion.
+  const wide = {
+    ...proposed(id, requestedCuisine),
+    summary: "<b>Chicken Tikka</b> has 452 calories and 23g of protein. <a href='https://spoonacular.com'>See more</a>",
+    excerpt: "Chicken Tikka",
+    cuisines: ["thai"],
+    dishTypes: ["main course", "dinner"],
+    nutrition: { calories: 452 },
+  };
+  return wide;
+}
+
+function dirtySlotted(
+  id: number,
+  slot: SlottedRecipe["slot"],
+  requestedCuisine: string | null,
+  asDesigned = true,
+): SlottedRecipe {
+  return { ...dirtyProposed(id, requestedCuisine), slot, asDesigned };
+}
+
+// Mirrors fullSet()'s shape but not its pins: by-id slots 1/2 pin no cuisine, slot 3 pins
+// "italian", slot 4 "french" — deliberately NOT "thai", the value every dirty recipe's
+// `cuisines[]` carries. An endpoint sourcing `requested_cuisine` from the response body
+// would be visibly wrong here rather than coincidentally right.
+function dirtyFullSet(): SlottedRecipe[] {
+  return [
+    dirtySlotted(42, 1, null),
+    dirtySlotted(5, 2, null),
+    dirtySlotted(300, 3, "italian"),
+    dirtySlotted(400, 4, "french", false),
+  ];
+}
+
 beforeEach(() => {
   vi.clearAllMocks();
   // The endpoint now leaves console.error traces on failure paths (impl-review F2);
@@ -170,13 +217,13 @@ describe("POST /api/proposals — mode routing", () => {
     const body = (await res.json()) as {
       ok: boolean;
       mode: string;
-      proposals: { slot: number; ratingVerdict: string | null }[];
+      proposals: { slot: number; ratingVerdict: string | null; asDesigned: boolean }[];
     };
     expect(body.mode).toBe("cold_start");
     expect(body.proposals.map((p) => p.slot)).toEqual([1, 2, 3]);
     expect(body.proposals.every((p) => p.ratingVerdict === null)).toBe(true);
     // Positional slots carry no provenance — the client must never badge a cold-start card.
-    expect(body.proposals.every((p) => p.asDesigned === false)).toBe(true);
+    expect(body.proposals.every((p) => !p.asDesigned)).toBe(true);
   });
 
   it("≥1 like → personalized path, fed exactly the four history reads", async () => {
@@ -290,6 +337,57 @@ describe("POST /api/proposals — persistence rows", () => {
     expect(rows.map((row) => row.requested_cuisine)).toEqual([null, null, "thai", "french"]);
   });
 
+  it("cold start: rows carry the engine's per-recipe pin unchanged, one row per proposal (risk #5)", async () => {
+    // The DB-side face of risk #5, on the cold-start branch — the branch US-02 binds and the
+    // one no other persistence assertion exercises. The endpoint must carry each recipe's
+    // pinned cuisine into `requested_cuisine` untouched: never re-derived, defaulted, or
+    // collapsed to one row per cuisine. `cuisine_affinity` reads this column back to drive
+    // slot 3, so a collapse here would starve the taste profile silently. This asserts
+    // carriage only — diversity itself is the engine's guarantee, not the endpoint's.
+    const { insert } = mockClient();
+    coldStart.mockResolvedValue({
+      ok: true,
+      proposals: [proposed(1, "italian"), proposed(2, "mexican"), proposed(3, "italian"), proposed(4, "mexican")],
+      degraded: false,
+    });
+
+    const res = await POST(makeContext());
+
+    expect(res.status).toBe(200);
+    expect(insert).toHaveBeenCalledTimes(1);
+    const rows = insert.mock.calls[0][0] as Record<string, unknown>[];
+    // One row per proposal — a repeated cuisine must not dedupe rows.
+    expect(rows).toHaveLength(4);
+    expect(rows.map((row) => row.requested_cuisine)).toEqual(["italian", "mexican", "italian", "mexican"]);
+    const distinct = new Set(rows.map((row) => row.requested_cuisine));
+    expect(distinct.size).toBeGreaterThanOrEqual(2);
+    expect(distinct).toEqual(new Set(["italian", "mexican"]));
+  });
+
+  it("cold start: a repeated spoonacular_id still writes one proposals row per proposal (risk #5)", async () => {
+    // The sibling above pins carriage against *distinct* ids, so an id-keyed dedupe in
+    // `persist()` is a no-op there and cannot redden it — a clean fixture that cannot fail.
+    // Here two proposals deliberately share id 1 with different pins: `recipes` is a
+    // catalogue and legitimately upserts on `spoonacular_id`, but `proposals` is an event
+    // log, so borrowing that dedupe for the insert would silently drop a row and starve
+    // `cuisine_affinity` of the second pin. Asserts the rows survive, not that the engine
+    // can emit a duplicate id.
+    const { insert } = mockClient();
+    coldStart.mockResolvedValue({
+      ok: true,
+      proposals: [proposed(1, "italian"), proposed(1, "mexican"), proposed(2, "italian")],
+      degraded: false,
+    });
+
+    const res = await POST(makeContext());
+
+    expect(res.status).toBe(200);
+    const rows = insert.mock.calls[0][0] as Record<string, unknown>[];
+    expect(rows).toHaveLength(3);
+    expect(rows.map((row) => row.spoonacular_id)).toEqual([1, 1, 2]);
+    expect(rows.map((row) => row.requested_cuisine)).toEqual(["italian", "mexican", "italian"]);
+  });
+
   it("tolerates a missing admin client: 200 with recorded:false, no recipes write attempted", async () => {
     // SUPABASE_SERVICE_ROLE_KEY unset degrades persistence, never the set itself.
     const { upsert, insert } = mockClient();
@@ -323,6 +421,77 @@ describe("POST /api/proposals — persistence rows", () => {
     expect(body.ok).toBe(true);
     expect(body.recorded).toBe(false);
     expect(body.proposals).toHaveLength(4);
+  });
+});
+
+// Risk #4 — storage-field discipline at the DB boundary. Every fixture here is deliberately
+// dirty: it carries the permitted-in-memory fields (summary, excerpt) *and* forbidden provider
+// fields (cuisines, dishTypes, nutrition), so the closed key-set assertions have something
+// real to fail against — a clean fixture cannot fail. This layer proves endpoint carriage
+// only: `@/lib/proposals` is module-mocked, so the engine-side provenance is out of reach.
+describe("POST /api/proposals — storage-field discipline (FR-011)", () => {
+  it("writes exactly the FR-011 triple per recipes row, on the service-role client, from dirty inputs", async () => {
+    const { upsert, adminFrom } = mockClient();
+    setHistory({ likes: [like(42), like(5)], stales: [stale(5)], cuisine: "thai" });
+    personalized.mockResolvedValue({ ok: true, proposals: dirtyFullSet(), degraded: false });
+
+    const res = await POST(makeContext());
+
+    expect(res.status).toBe(200);
+    // Lesson-2 hardening: the shared-catalogue write travels on the admin client, never the session one.
+    expect(adminFrom).toHaveBeenCalledWith("recipes");
+    expect(upsert).toHaveBeenCalledTimes(1);
+    const rows = upsert.mock.calls[0][0] as Record<string, unknown>[];
+    expect(rows).toHaveLength(4);
+    for (const row of rows) {
+      // Closed set — a `summary` (or any other) column gaining a spread fails here,
+      // where a per-field toBeUndefined() probe would silently miss it.
+      expect(Object.keys(row).sort()).toEqual(FR011_RECIPE_COLUMNS);
+    }
+    expect(rows.map((row) => row.spoonacular_id)).toEqual([42, 5, 300, 400]);
+    expect(rows.map((row) => row.title)).toEqual(["Recipe 42", "Recipe 5", "Recipe 300", "Recipe 400"]);
+    expect(rows.map((row) => row.image)).toEqual([
+      "https://img.example/42.jpg",
+      "https://img.example/5.jpg",
+      "https://img.example/300.jpg",
+      "https://img.example/400.jpg",
+    ]);
+  });
+
+  it("writes exactly the app's own columns per proposals row, on the session client", async () => {
+    const { insert, from } = mockClient();
+    setHistory({ likes: [like(42), like(5)], stales: [stale(5)], cuisine: "thai" });
+    personalized.mockResolvedValue({ ok: true, proposals: dirtyFullSet(), degraded: false });
+
+    const res = await POST(makeContext());
+
+    expect(res.status).toBe(200);
+    expect(from).toHaveBeenCalledWith("proposals");
+    expect(insert).toHaveBeenCalledTimes(1);
+    const rows = insert.mock.calls[0][0] as Record<string, unknown>[];
+    expect(rows).toHaveLength(4);
+    for (const row of rows) {
+      // Closed set, complementing the "persists to both tables" test's value-level
+      // assertions above — an added `summary`
+      // column would pass those but fail here.
+      expect(Object.keys(row).sort()).toEqual(PROPOSALS_APP_COLUMNS);
+    }
+  });
+
+  it("requested_cuisine is the pinned request facet — never the response body's cuisines[]", async () => {
+    const { insert } = mockClient();
+    setHistory({ likes: [like(42), like(5)], stales: [stale(5)], cuisine: "thai" });
+    personalized.mockResolvedValue({ ok: true, proposals: dirtyFullSet(), degraded: false });
+
+    const res = await POST(makeContext());
+
+    expect(res.status).toBe(200);
+    const rows = insert.mock.calls[0][0] as Record<string, unknown>[];
+    // Every dirty recipe carries cuisines: ["thai"], contradicting its pin. An endpoint that
+    // sourced the column from the provider field would write "thai" everywhere; the by-id
+    // slots 1/2 must stay NULL rather than being back-filled from the fixture's cuisines[].
+    expect(rows.map((row) => row.requested_cuisine)).toEqual([null, null, "italian", "french"]);
+    expect(rows.every((row) => row.requested_cuisine !== "thai")).toBe(true);
   });
 });
 

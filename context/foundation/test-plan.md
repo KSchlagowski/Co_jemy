@@ -6,7 +6,7 @@
 >
 > Refresh: re-run `/10x-test-plan --refresh` when stale (see §8).
 >
-> Last updated: 2026-08-09 (§3 Phase 1 → `testing-storage-diversity-units` opened for risks #4/#5; risk #1 slice shipped)
+> Last updated: 2026-08-15 (§3 Phase 1 → `complete`; risks #4/#5 unit gates shipped via `testing-storage-diversity-units`)
 >
 > Known staleness (candidates for `--refresh`, not yet reconciled): §4 lists
 > Playwright as "none yet", but `@playwright/test` + `e2e/auth-*.spec.ts` and
@@ -81,9 +81,9 @@ orchestrator updates Status as artifacts appear on disk.
 
 | # | Phase name | Goal (one line) | Risks covered | Test types | Status | Change folder |
 |---|------------|-----------------|---------------|------------|--------|---------------|
-| 1 | Harness + proposal-engine units | Bootstrap the runner; defend the quota budget, storage-field discipline, and request-side diversity at the cheapest layer | #1, #4, #5 | unit | implementing (risk #1 shipped; #4/#5 change opened) | context/changes/testing-harness-proposal-units/ (#1, shipped) · context/changes/testing-storage-diversity-units/ (#4, #5) |
+| 1 | Harness + proposal-engine units | Bootstrap the runner; defend the quota budget, storage-field discipline, and request-side diversity at the cheapest layer | #1, #4, #5 | unit | complete | context/changes/testing-harness-proposal-units/ · context/changes/testing-storage-diversity-units/ |
 | 2 | Proposal API + card-render integration | Prove the endpoint envelope leaks no extra provider call and the card sanitizes/falls back correctly | #1, #6 | integration + component | not started | — |
-| 3 | Rating-loop persistence & isolation | Lock the persistence guardrail, 👎-exclusion, per-user isolation, and the shared-catalogue write guard (lands with S-03/S-05) | #2, #3, #7 | integration | not started | — |
+| 3 | Rating-loop persistence & isolation | Lock the persistence guardrail, 👎-exclusion, per-user isolation, and the shared-catalogue write guard, and confirm the `recipes` column set against a live schema (lands with S-03/S-05) | #2, #3, #7, #4 (schema-column half) | integration | not started | — |
 | 4 | E2e critical flow + gates wiring | One end-to-end run of login → propose → rate → re-propose (👎'd recipe absent) and enforce the test gates in CI | #2, #3 | e2e + gates | not started | — |
 
 **Status vocabulary** (fixed — parser literals): `not started` →
@@ -125,7 +125,7 @@ phase lands; before that, the gate is `planned`.
 | Gate | Where | Required? | Catches |
 |------|-------|-----------|---------|
 | lint + typecheck (`astro sync` + eslint + build) | local + CI (`ci.yml`) | required (already wired) | syntactic / type drift; react-compiler violations |
-| unit | local + CI | required after §3 Phase 1 | quota/call-count, storage-field, diversity logic regressions (risk #1 suite runnable now via `npm test`; #4/#5 pending) |
+| unit | local + CI | runnable locally now; enforced in CI after §3 Phase 4 (`ci.yml` has no `npm test` step yet — wiring it is Phase 4's "gates wiring") | quota/call-count, storage-field, and diversity logic regressions (full §3 Phase 1 suite via `npm test`) |
 | integration (API + component + RLS) | local + CI | required after §3 Phase 2 | endpoint envelope, card sanitize/fallback, persistence, isolation |
 | e2e on critical flow | CI on PR | required after §3 Phase 4 | broken login → propose → rate → re-propose path |
 | post-edit hook | local (agent loop) | recommended (Module 3 Lesson 3) | regressions at edit time — configured in a later lesson, not here |
@@ -163,6 +163,15 @@ Assert **oracle constants from the PRD** (2 calls, `number=20`, `1 + 0.035n`
 code's own constant makes it a mirror test that passes against a regression.
 **Loop** (~30×) to defeat `Math.random`, never seed.
 
+Assertion shapes (from the #4/#5 slice): **assert closed key sets** —
+`Object.keys(row).sort()` against a hard-coded literal, never per-field
+`toBeUndefined()` (an enumeration misses the next field added). **Make
+compliance fixtures deliberately dirty** — a clean fixture cannot fail, which
+is how a storage test passes while the leak ships. **Derive an oracle from
+observed call args** (e.g. cuisines read back from `search.mock.calls`) when a
+constant would mirror the implementation. Worked examples: the three test
+files above.
+
 ### 6.2 Adding an integration test
 
 TBD — see §3 Phase 2 (Astro API route + `@testing-library/react` component
@@ -187,6 +196,14 @@ patterns against a local Supabase).
 
 (Optional. After each phase lands, `/10x-implement` appends a 2–3 line note
 here capturing anything surprising the rollout phase taught.)
+
+- **Phase 1** (2026-08-15): risk #4's exposure was *not* a missing schema
+  constraint but an unnarrowed argument — `persist()` receives the wide
+  `ProposedRecipe[]`, so a one-character spread would ship `excerpt` (a derived
+  form of `summary`) into a write. Risk #5's residual exposure was *not*
+  request-vs-response (the response's `cuisines[]` is structurally unreachable)
+  but request-guarantee-vs-delivered-guarantee, via the 200-with-zero-results
+  collapse.
 
 ## 7. What We Deliberately Don't Test
 

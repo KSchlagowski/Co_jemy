@@ -728,52 +728,66 @@ silent drift.
 
 #### Automated
 
-- [ ] 1.1 `recipes` upsert key-set + value + table-name tests pass
-- [ ] 1.2 `proposals` insert key-set + table-name tests pass
-- [ ] 1.3 `requested_cuisine` provenance test (pinned value; NULL on by-id) passes
-- [ ] 1.4 `toCandidate` whitelist tests pass for both `searchRecipes` and `getRecipeById`
-- [ ] 1.5 Existing 66 tests still green — no regression from the new fixtures
-- [ ] 1.6 Lint incl. strict type-check passes on the dirty-fixture idiom
+- [x] 1.1 `recipes` upsert key-set + value + table-name tests pass — b47905d
+- [x] 1.2 `proposals` insert key-set + table-name tests pass — b47905d
+- [x] 1.3 `requested_cuisine` provenance test (pinned value; NULL on by-id) passes — b47905d
+- [x] 1.4 `toCandidate` whitelist tests pass for both `searchRecipes` and `getRecipeById` — b47905d
+- [x] 1.5 Existing 66 tests still green — no regression from the new fixtures — b47905d
+- [x] 1.6 Lint incl. strict type-check passes on the dirty-fixture idiom — b47905d
 
 #### Manual
 
-- [ ] 1.7 `{ ...p }` in the upsert map reddens the `recipes` key-set test (then restored)
-- [ ] 1.8 Adding `summary` to the upsert row reddens the `recipes` key-set test (then restored)
-- [ ] 1.9 An extra key on the `proposals` insert row reddens the `proposals` key-set test (then restored)
-- [ ] 1.10 Hard-coding `requested_cuisine: "thai"` reddens the provenance test (then restored)
-- [ ] 1.11 Adding `cuisines` to `toCandidate`'s return reddens the whitelist test (then restored)
+- [x] 1.7 `{ ...p }` in the upsert map reddens the `recipes` key-set test (then restored) — verified in impl-review
+- [x] 1.8 Adding `summary` to the upsert row reddens the `recipes` key-set test (then restored) — verified in impl-review
+- [x] 1.9 An extra key on the `proposals` insert row reddens the `proposals` key-set test (then restored) — verified in impl-review
+- [x] 1.10 Hard-coding `requested_cuisine: "thai"` reddens the provenance test (then restored) — verified in impl-review
+- [x] 1.11 Adding `cuisines` to `toCandidate`'s return reddens the whitelist test (then restored) — verified in impl-review
 
 ### Phase 2: Risk #5 — Request-Side Cuisine Diversity
 
 #### Automated
 
-- [ ] 2.1 Delivered-set ≥2-cuisine test passes across ~30 iterations
-- [ ] 2.2 200-with-zero-results collapse test passes (single-cuisine set + `degraded`, exactly 2 calls, 0 by-id)
-- [ ] 2.3 Double-zero-results test passes (empty set + `degraded`)
-- [ ] 2.4 Contradictory-`cuisines[]` test passes, including `degraded === false`
-- [ ] 2.5 By-id NULL provenance test passes against a dirty by-id candidate
-- [ ] 2.6 Both `CUISINES` mirror assertions replaced; the now-unused import removed
-- [ ] 2.7 Persisted-rows-carry-the-pin test passes (values + one row per proposal)
-- [ ] 2.8 Full suite green
+- [x] 2.1 Delivered-set ≥2-cuisine test passes across ~30 iterations — d928729
+- [x] 2.2 200-with-zero-results collapse test passes (single-cuisine set + `degraded`, exactly 2 calls, 0 by-id) — d928729
+- [x] 2.3 Double-zero-results test passes (empty set + `degraded`) — d928729
+- [x] 2.4 Contradictory-`cuisines[]` test passes, including `degraded === false` — d928729
+- [x] 2.5 By-id NULL provenance test passes against a dirty by-id candidate — d928729
+- [x] 2.6 Both `CUISINES` mirror assertions replaced; the now-unused import removed — d928729
+- [x] 2.7 Persisted-rows-carry-the-pin test passes (values + one row per proposal) — d928729
+- [x] 2.8 Full suite green — d928729
 
 #### Manual
 
-- [ ] 2.9 Pinning both groups to the same cuisine reddens the delivered-set diversity test (then restored)
-- [ ] 2.10 Hard-coding `degraded: false` reddens the zero-results collapse test (then restored)
-- [ ] 2.11 The `cuisines?.[0] ?? requestedCuisine` fall-through at `:335` reddens the contradictory-`cuisines[]` test (then restored)
-- [ ] 2.12 Sourcing `fromById`'s cuisine from the response `cuisines[]` at `:346` reddens the by-id NULL provenance test (then restored)
-- [ ] 2.13 Adding `"american"` to `CUISINES` reddens the `VERIFIED_CUISINES` assertion (then restored)
-- [ ] 2.14 Deduping the `proposals` insert rows by `spoonacular_id` reddens the persisted-pin test (then restored)
+- [x] 2.9 Pinning both groups to the same cuisine reddens the delivered-set diversity test (then restored) — verified in impl-review
+- [x] 2.10 Hard-coding `degraded: false` reddens the zero-results collapse test (then restored) — verified in impl-review
+- [x] 2.11 The `cuisines?.[0] ?? requestedCuisine` fall-through at `:335` reddens the contradictory-`cuisines[]` test (then restored) — verified in impl-review
+- [x] 2.12 Sourcing `fromById`'s cuisine from the response `cuisines[]` at `:346` reddens the by-id NULL provenance test (then restored) — verified in impl-review
+- [x] 2.13 Adding `"american"` to `CUISINES` reddens the `VERIFIED_CUISINES` assertion (then restored) — verified in impl-review
+- [x] 2.14 Deduping the `proposals` insert rows by `spoonacular_id` reddens the persisted-pin test (then restored) — impl-review F1: originally stayed **green** (distinct-id fixture); fixed by the repeated-id sibling test, now verified red
 
 ### Phase 3: Cookbook + Rollout Status Sync
 
 #### Automated
 
-- [ ] 3.1 Full suite still green after doc edits
+- [x] 3.1 Full suite still green after doc edits — 80e9b7f
 
 #### Manual
 
-- [ ] 3.2 §3 Phase 1 Status cell reads `complete`; the Change folder cell lists both slices without the `(#1, shipped)` qualifier
-- [ ] 3.3 A reader can add a storage-discipline test from §6.1 alone
-- [ ] 3.4 §3 Phase 1 `complete` is honest — every risk it claims (#1, #4, #5) has a runnable gate, and §5's Required? cell defers CI enforcement to rollout Phase 4
-- [ ] 3.5 The A3 deferral is visible in the test plan — §3's Phase 3 row names `#4 (schema-column half)`
+- [x] 3.2 §3 Phase 1 Status cell reads `complete`; the Change folder cell lists both slices without the `(#1, shipped)` qualifier — verified in impl-review
+- [x] 3.3 A reader can add a storage-discipline test from §6.1 alone — verified in impl-review (§6.1 carries all three assertion shapes + the three files as worked examples)
+- [x] 3.4 §3 Phase 1 `complete` is honest — every risk it claims (#1, #4, #5) has a runnable gate, and §5's Required? cell defers CI enforcement to rollout Phase 4 — verified in impl-review (`ci.yml` confirmed to have no `npm test` step; §5 says so)
+- [x] 3.5 The A3 deferral is visible in the test plan — §3's Phase 3 row names `#4 (schema-column half)` — verified in impl-review
+
+### Phase 4: FR-011 structural narrowing (follow-on, not yet started)
+
+> Opened by impl-review F3. `lessons.md` ("Never close a compliance slice guarded only by a
+> test") requires the narrowing type at the write boundary to be a **named step here**, not a
+> line in §What We're NOT Doing. A6 correctly kept it out of the test commits — a production
+> change alongside the test that guards it destroys the mutation checks — but the follow-on
+> must stay tracked. The Phase 1/2 tests are what make this safe to do.
+
+#### Automated
+
+- [ ] 4.1 The `recipes` upsert row is built through a `Pick<ProposedRecipe, "id" | "title" | "image">`-typed helper, so FR-011 is structural rather than conventional (`src/pages/api/proposals.ts:185-188`)
+- [ ] 4.2 Full suite still green — the Phase 1 key-set tests pass unchanged against the narrowed row
+- [ ] 4.3 Mutation re-check: `{ ...p }` no longer type-checks at the upsert site
